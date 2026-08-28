@@ -1,15 +1,40 @@
 # Moumusic
 
-Moumusic 是由 moumou 打造的輕量音樂播放器：搜尋、播放、收藏、歌詞與下載，
-可以直接在瀏覽器或 iOS App 中使用，不需要登入帳號。
+[繁體中文](#繁體中文) · [简体中文](#简体中文) · [English](#english) · [日本語](#日本語) · [한국어](#한국어) · [Русский](#русский) · [Español](#español) · [Português](#português)
 
-Moumusic is a lightweight music player built by moumou. Search, play, save favourites,
-read lyrics and download tracks from the browser or iOS app — no account required.
+## 繁體中文
 
-> 品牌名稱：Moumusic ｜ Brand: Moumusic
+Moumusic 是由 moumou 打造的輕量音樂播放器，可在瀏覽器與 iOS App 使用。支援搜尋、播放、收藏、歌詞、歌單與下載；可在「設置」頁匯入 LX Music / MusicFree 相容音源，再切換网易云、QQ 音樂、酷我或落雪等平台。無需登入。iOS 版支援背景播放、鎖定畫面與控制中心的封面及播放控制、全屏歌詞，以及 Live Activity / Dynamic Island 歌詞顯示。
 
-支援語言 / Languages: 繁體中文、简体中文、English、日本語、한국어、Русский、
-Español、Português。應用會依系統語言自動選擇，也可以在「設置 / Settings」中手動切換。
+## 简体中文
+
+Moumusic 是由 moumou 打造的轻量音乐播放器，可在浏览器和 iOS App 中使用。支持搜索、播放、收藏、歌词、歌单和下载；可在“设置”页导入 LX Music / MusicFree 兼容音源，再切换网易云、QQ 音乐、酷我或落雪等平台。无需登录。iOS 版支持后台播放、锁屏和控制中心的封面及播放控制、全屏歌词，以及 Live Activity / Dynamic Island 歌词显示。
+
+## English
+
+Moumusic is a lightweight music player built by moumou for the browser and iOS. It supports search, playback, favourites, lyrics, playlists and downloads. Import an LX Music / MusicFree-compatible source from Settings to use services such as NetEase Cloud Music, QQ Music, Kuwo or Luoxue. No account is required. The iOS app supports background playback, artwork and controls on the Lock Screen and Control Center, full-screen lyrics, and lyric updates in Live Activities / Dynamic Island.
+
+## 日本語
+
+Moumusic は moumou が開発する軽量音楽プレーヤーです。ブラウザと iOS App で検索、再生、お気に入り、歌詞、プレイリスト、ダウンロードを利用できます。「設定」から LX Music / MusicFree 互換の音源を追加し、NetEase Cloud Music、QQ Music、Kuwo、Luoxue などを切り替えられます。ログインは不要です。iOS 版はバックグラウンド再生、ロック画面とコントロールセンターのアートワーク・操作、全画面歌詞、Live Activity / Dynamic Island の歌詞表示に対応します。
+
+## 한국어
+
+Moumusic은 moumou가 만든 가벼운 음악 플레이어로 브라우저와 iOS App에서 사용할 수 있습니다. 검색, 재생, 즐겨찾기, 가사, 플레이리스트와 다운로드를 지원합니다. ‘설정’에서 LX Music / MusicFree 호환 음원을 가져오면 NetEase Cloud Music, QQ Music, Kuwo, Luoxue 등의 플랫폼을 전환할 수 있습니다. 로그인이 필요하지 않습니다. iOS 버전은 백그라운드 재생, 잠금 화면과 제어 센터의 앨범 아트·재생 제어, 전체 화면 가사, Live Activity / Dynamic Island 가사 표시를 지원합니다.
+
+## Русский
+
+Moumusic — лёгкий музыкальный проигрыватель от moumou для браузера и iOS. Он поддерживает поиск, воспроизведение, избранное, тексты песен, плейлисты и загрузку. В разделе «Настройки» можно импортировать источники, совместимые с LX Music / MusicFree, и переключаться между NetEase Cloud Music, QQ Music, Kuwo, Luoxue и другими платформами. Регистрация не требуется. Версия для iOS поддерживает фоновое воспроизведение, обложку и управление на экране блокировки и в Пункте управления, полноэкранные тексты и отображение текущей строки в Live Activity / Dynamic Island.
+
+## Español
+
+Moumusic es un reproductor de música ligero creado por moumou para el navegador y iOS. Permite buscar y reproducir música, guardar favoritos, ver letras, gestionar listas y descargar canciones. Desde «Ajustes» puedes importar fuentes compatibles con LX Music / MusicFree y cambiar entre NetEase Cloud Music, QQ Music, Kuwo, Luoxue y otras plataformas. No requiere una cuenta. La versión para iOS ofrece reproducción en segundo plano, carátula y controles en la pantalla bloqueada y el Centro de control, letras a pantalla completa y letras actualizadas en Live Activity / Dynamic Island.
+
+## Português
+
+Moumusic é um reprodutor de música leve criado por moumou para navegador e iOS. Ele oferece pesquisa, reprodução, favoritos, letras, playlists e downloads. Em “Configurações”, importe uma fonte compatível com LX Music / MusicFree para alternar entre NetEase Cloud Music, QQ Music, Kuwo, Luoxue e outras plataformas. Não é necessário fazer login. O app para iOS oferece reprodução em segundo plano, capa e controles na tela bloqueada e na Central de Controle, letras em tela cheia e atualização das letras no Live Activity / Dynamic Island.
+
+> 支援語言 / Languages: 繁體中文、简体中文、English、日本語、한국어、Русский、Español、Português。應用會依系統語言自動選擇，也可以在「設置 / Settings」中手動切換。
 
 部署步驟 / Deployment → [DEPLOY.md](DEPLOY.md) ｜ 發布版本 / Releases → [Releases](../../releases)
 
