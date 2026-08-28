@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag to create
         required: true
-        default: v1.10.11-ios-unsigned
+        default: v1.10.12-ios-unsigned
         type: string
 
 permissions:
