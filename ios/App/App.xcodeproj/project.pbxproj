@@ -450,7 +450,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CURRENT_PROJECT_VERSION = 11015;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = App/MoumouLiveActivity/Info.plist;
+				INFOPLIST_FILE = MoumouLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				MARKETING_VERSION = 1.10.15;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app.liveactivity;
@@ -468,7 +468,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CURRENT_PROJECT_VERSION = 11015;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = App/MoumouLiveActivity/Info.plist;
+				INFOPLIST_FILE = MoumouLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				MARKETING_VERSION = 1.10.15;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app.liveactivity;
