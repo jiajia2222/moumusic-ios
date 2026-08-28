@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build-release:
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -29,6 +29,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Verify Apple toolchain
+        run: |
+          xcodebuild -version
+          swift --version
 
       - name: Build unsigned IPA
         run: pnpm build:ipa

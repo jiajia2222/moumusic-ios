@@ -193,8 +193,8 @@ pnpm typecheck
 
 ### iOS 未簽名 IPA
 
-專案現在也包含 Capacitor iOS 原生工程。IPA 建置必須在 macOS + Xcode 執行，並刻意
-關閉程式碼簽名：
+專案現在也包含 Capacitor iOS 原生工程。因為 Capacitor 8.5 使用 Swift 6 的 API，IPA
+建置必須在 macOS 26 + Xcode 26（或更新版本）執行，並刻意關閉程式碼簽名：
 
 ```bash
 pnpm install
