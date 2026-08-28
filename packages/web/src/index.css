@@ -24,7 +24,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   outline-offset: 3px;
 }
 
-/* WhyMusic 的品牌底色：像唱片店夜间橱窗，猫标识是唯一高对比图形。 */
+/* moumou 的品牌底色：像唱片店夜间橱窗，猫标识是唯一高对比图形。 */
 .wm-shell {
   background:
     radial-gradient(ellipse 70% 34% at 50% -5%, rgba(255, 118, 92, 0.12), transparent 72%),
