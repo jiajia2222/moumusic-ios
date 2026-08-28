@@ -50,4 +50,8 @@ test('Capacitor Share is patched for the Capacitor 8.5 Swift API', () => {
   const patch = fs.readFileSync(path.join(patchesDir, patchName), 'utf8')
   assert.match(patch, /getString\("text", ""\)/)
   assert.match(patch, /unavailable\("Must provide at least url, text or files"\)/)
+  assert.match(patch, /\+import UIKit/)
+  assert.match(patch, /\+.*connectedScenes/)
+  assert.match(patch, /\+.*presenter\.present\(/)
+  assert.doesNotMatch(patch, /\+.*bridge\?\.viewController/)
 })

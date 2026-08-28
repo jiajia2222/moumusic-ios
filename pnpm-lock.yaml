@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@capacitor/share@8.0.1': 35f69603ad2112de9ac28d5f15c9d50d7175b40e1ea09ed17bcbb8fb8b3be34c
+  '@capacitor/share@8.0.1': 5a8322849d81e632f8b83019c14f97b9a5f0c17284d93fa4e92c3ac8762a69c0
 
 importers:
 
@@ -25,7 +25,7 @@ importers:
         version: 8.5.0(@capacitor/core@8.5.0)
       '@capacitor/share':
         specifier: ^8.0.1
-        version: 8.0.1(patch_hash=35f69603ad2112de9ac28d5f15c9d50d7175b40e1ea09ed17bcbb8fb8b3be34c)(@capacitor/core@8.5.0)
+        version: 8.0.1(patch_hash=5a8322849d81e632f8b83019c14f97b9a5f0c17284d93fa4e92c3ac8762a69c0)(@capacitor/core@8.5.0)
     devDependencies:
       '@capacitor/cli':
         specifier: ^8.5.0
@@ -1481,7 +1481,7 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.0
 
-  '@capacitor/share@8.0.1(patch_hash=35f69603ad2112de9ac28d5f15c9d50d7175b40e1ea09ed17bcbb8fb8b3be34c)(@capacitor/core@8.5.0)':
+  '@capacitor/share@8.0.1(patch_hash=5a8322849d81e632f8b83019c14f97b9a5f0c17284d93fa4e92c3ac8762a69c0)(@capacitor/core@8.5.0)':
     dependencies:
       '@capacitor/core': 8.5.0
 

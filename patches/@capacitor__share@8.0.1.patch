@@ -1,8 +1,14 @@
 diff --git a/ios/Sources/SharePlugin/SharePlugin.swift b/ios/Sources/SharePlugin/SharePlugin.swift
-index 73aa61b2b28a754d041c2f6a416f098c5a198d6b..0f0a8c683c2c9a122fb180dcd822418a434a2115 100644
+index 73aa61b2b28a754d041c2f6a416f098c5a198d6b..e8bc7b16aa717c2dfbc7484bb394a3125a1a5e4d 100644
 --- a/ios/Sources/SharePlugin/SharePlugin.swift
 +++ b/ios/Sources/SharePlugin/SharePlugin.swift
-@@ -19,39 +19,40 @@ public class SharePlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -1,4 +1,5 @@
+ import Foundation
++import UIKit
+ import Capacitor
+ 
+ @objc(SharePlugin)
+@@ -19,39 +20,40 @@ public class SharePlugin: CAPPlugin, CAPBridgedPlugin {
      @objc func share(_ call: CAPPluginCall) {
          var items = [Any]()
  
@@ -54,7 +60,7 @@ index 73aa61b2b28a754d041c2f6a416f098c5a198d6b..0f0a8c683c2c9a122fb180dcd822418a
                      return
                  }
  
-@@ -60,12 +61,12 @@ public class SharePlugin: CAPPlugin, CAPBridgedPlugin {
+@@ -60,16 +62,31 @@ public class SharePlugin: CAPPlugin, CAPBridgedPlugin {
                          "activityType": activityType?.rawValue ?? ""
                      ])
                  } else {
@@ -63,9 +69,31 @@ index 73aa61b2b28a754d041c2f6a416f098c5a198d6b..0f0a8c683c2c9a122fb180dcd822418a
                  }
  
              }
-             if self?.bridge?.viewController?.presentedViewController != nil {
+-            if self?.bridge?.viewController?.presentedViewController != nil {
 -                call.reject("Can't share while sharing is in progress")
++            guard let self = self, let presenter = Self.sharePresenter() else {
++                call.unavailable("Can't find a view controller to present sharing")
++                return
++            }
++            if presenter.presentedViewController != nil {
 +                call.unavailable("Can't share while sharing is in progress")
                  return
              }
-             self?.setCenteredPopover(actionController)
+-            self?.setCenteredPopover(actionController)
+-            self?.bridge?.viewController?.present(actionController, animated: true, completion: nil)
++            self.setCenteredPopover(actionController)
++            presenter.present(actionController, animated: true, completion: nil)
+         }
+     }
++
++    private static func sharePresenter() -> UIViewController? {
++        let windows = UIApplication.shared.connectedScenes
++            .compactMap { $0 as? UIWindowScene }
++            .flatMap(\.windows)
++
++        let window = windows.first(where: { $0.isKeyWindow })
++            ?? windows.first(where: { !$0.isHidden && $0.alpha > 0 && $0.windowLevel == .normal })
++
++        return window?.rootViewController
++    }
+ }
