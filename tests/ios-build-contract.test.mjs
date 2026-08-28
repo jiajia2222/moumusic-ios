@@ -38,3 +38,16 @@ test('release workflow builds on macOS and uploads the unsigned IPA', () => {
   assert.match(workflow, /gh release create/)
   assert.match(workflow, /ios\/build\/unsigned\/WhyMusic-unsigned\.ipa/)
 })
+
+test('Capacitor Share is patched for the Capacitor 8.5 Swift API', () => {
+  const patchesDir = path.join(ROOT, 'patches')
+  assert.ok(fs.existsSync(patchesDir), 'dependency patches directory must exist')
+  const patchName = fs.readdirSync(patchesDir).find(
+    name => name.includes('share') && name.includes('8.0.1') && name.endsWith('.patch'),
+  )
+  assert.ok(patchName, 'a patch for @capacitor/share@8.0.1 must exist')
+
+  const patch = fs.readFileSync(path.join(patchesDir, patchName), 'utf8')
+  assert.match(patch, /getString\("text", ""\)/)
+  assert.match(patch, /unavailable\("Must provide at least url, text or files"\)/)
+})

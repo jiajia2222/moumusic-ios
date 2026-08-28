@@ -1,0 +1,71 @@
+diff --git a/ios/Sources/SharePlugin/SharePlugin.swift b/ios/Sources/SharePlugin/SharePlugin.swift
+index 73aa61b2b28a754d041c2f6a416f098c5a198d6b..0f0a8c683c2c9a122fb180dcd822418a434a2115 100644
+--- a/ios/Sources/SharePlugin/SharePlugin.swift
++++ b/ios/Sources/SharePlugin/SharePlugin.swift
+@@ -19,39 +19,40 @@ public class SharePlugin: CAPPlugin, CAPBridgedPlugin {
+     @objc func share(_ call: CAPPluginCall) {
+         var items = [Any]()
+ 
+-        if let text = call.getString("text") {
++        let text = call.getString("text", "")
++        if !text.isEmpty {
+             items.append(text)
+         }
+ 
+-        if let url = call.getString("url"), let urlObj = URL(string: url) {
++        let url = call.getString("url", "")
++        if !url.isEmpty, let urlObj = URL(string: url) {
+             items.append(urlObj)
+         }
+ 
+-        let title = call.getString("title")
++        let title = call.getString("title", "")
+ 
+-        if let files = call.getArray("files") {
+-            files.forEach { file in
+-                if let url = file as? String, let fileUrl = URL(string: url) {
+-                    items.append(fileUrl)
+-                }
++        let files = call.getArray("files", [])
++        files.forEach { file in
++            if let url = file as? String, let fileUrl = URL(string: url) {
++                items.append(fileUrl)
+             }
+         }
+ 
+         if items.count == 0 {
+-            call.reject("Must provide at least url, text or files")
++            call.unavailable("Must provide at least url, text or files")
+             return
+         }
+ 
+         DispatchQueue.main.async { [weak self] in
+             let actionController = UIActivityViewController(activityItems: items, applicationActivities: nil)
+ 
+-            if title != nil {
++            if !title.isEmpty {
+                 actionController.setValue(title, forKey: "subject")
+             }
+ 
+             actionController.completionWithItemsHandler = { (activityType, completed, _ returnedItems, activityError) in
+                 if activityError != nil {
+-                    call.reject("Error sharing item", nil, activityError)
++                    call.unavailable("Error sharing item")
+                     return
+                 }
+ 
+@@ -60,12 +61,12 @@ public class SharePlugin: CAPPlugin, CAPBridgedPlugin {
+                         "activityType": activityType?.rawValue ?? ""
+                     ])
+                 } else {
+-                    call.reject("Share canceled")
++                    call.unavailable("Share canceled")
+                 }
+ 
+             }
+             if self?.bridge?.viewController?.presentedViewController != nil {
+-                call.reject("Can't share while sharing is in progress")
++                call.unavailable("Can't share while sharing is in progress")
+                 return
+             }
+             self?.setCenteredPopover(actionController)
