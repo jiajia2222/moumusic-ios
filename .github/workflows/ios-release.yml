@@ -49,4 +49,4 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Moumou $RELEASE_TAG" \
             --notes "Automated unsigned iOS IPA build. This artifact must be signed before it can be installed on an iPhone." \
-            --prerelease
+            --latest
