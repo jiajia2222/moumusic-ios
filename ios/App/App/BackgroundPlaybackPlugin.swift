@@ -24,8 +24,9 @@ public final class BackgroundPlaybackPlugin: CAPPlugin, CAPBridgedPlugin {
     private var artworkTask: URLSessionDataTask?
     private var currentArtworkURL = ""
 
-    @available(iOS 16.1, *)
-    private var liveActivity: Activity<MoumouLiveActivityAttributes>?
+    // The main app still supports iOS 15, so keep the ActivityKit value type-erased
+    // and only cast it inside the iOS 16.1 availability guard below.
+    private var liveActivity: Any?
 
     override public func load() {
         configureRemoteCommands()
@@ -182,7 +183,7 @@ public final class BackgroundPlaybackPlugin: CAPPlugin, CAPBridgedPlugin {
         )
         Task { @MainActor [weak self] in
             guard let self else { return }
-            if let activity = self.liveActivity {
+            if let activity = self.liveActivity as? Activity<MoumouLiveActivityAttributes> {
                 await activity.update(using: state)
                 return
             }
@@ -201,7 +202,7 @@ public final class BackgroundPlaybackPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func endLiveActivity() {
         guard #available(iOS 16.1, *) else { return }
-        guard let activity = liveActivity else { return }
+        guard let activity = liveActivity as? Activity<MoumouLiveActivityAttributes> else { return }
         liveActivity = nil
         Task { @MainActor in
             await activity.end(using: nil, dismissalPolicy: .immediate)
