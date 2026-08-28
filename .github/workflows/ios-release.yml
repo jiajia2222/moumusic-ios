@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag to create
         required: true
-        default: v1.10.15
+        default: v1.10.16
         type: string
 
 permissions:
@@ -44,9 +44,9 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           gh release create "$RELEASE_TAG" \
-            ios/build/unsigned/Moumou-unsigned.ipa \
+            ios/build/unsigned/Moumusic-unsigned.ipa \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "Moumou $RELEASE_TAG" \
+            --title "Moumusic $RELEASE_TAG" \
             --notes "Automated unsigned iOS IPA build. This artifact must be signed before it can be installed on an iPhone." \
             --latest

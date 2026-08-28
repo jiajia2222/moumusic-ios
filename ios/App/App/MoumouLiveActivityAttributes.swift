@@ -33,7 +33,7 @@ public struct MoumouLiveActivityAttributes: ActivityAttributes {
 
     public var appName: String
 
-    public init(appName: String = "Moumou") {
+    public init(appName: String = "Moumusic") {
         self.appName = appName
     }
 }

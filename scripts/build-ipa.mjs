@@ -24,7 +24,7 @@ const BUILD_ROOT = path.join(IOS, 'build')
 const DERIVED_DATA = path.join(BUILD_ROOT, 'DerivedData')
 const OUTPUT_DIR = path.join(BUILD_ROOT, 'unsigned')
 const APP_PATH = path.join(DERIVED_DATA, 'Build', 'Products', 'Release-iphoneos', 'App.app')
-const IPA_PATH = path.join(OUTPUT_DIR, 'Moumou-unsigned.ipa')
+const IPA_PATH = path.join(OUTPUT_DIR, 'Moumusic-unsigned.ipa')
 
 const fail = (message) => {
   console.error(`✘ ${message}`)

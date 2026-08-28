@@ -1,21 +1,21 @@
-# Moumou
+# Moumusic
 
-Moumou 是由 moumou 打造的輕量音樂播放器：搜尋、播放、收藏、歌詞與下載，
+Moumusic 是由 moumou 打造的輕量音樂播放器：搜尋、播放、收藏、歌詞與下載，
 可以直接在瀏覽器或 iOS App 中使用，不需要登入帳號。
 
-Moumou is a lightweight music player built by moumou. Search, play, save favourites,
+Moumusic is a lightweight music player built by moumou. Search, play, save favourites,
 read lyrics and download tracks from the browser or iOS app — no account required.
 
-> 品牌名稱：Moumou ｜ Brand: Moumou
+> 品牌名稱：Moumusic ｜ Brand: Moumusic
 
 支援語言 / Languages: 繁體中文、简体中文、English、日本語、한국어、Русский、
 Español、Português。應用會依系統語言自動選擇，也可以在「設置 / Settings」中手動切換。
 
 部署步驟 / Deployment → [DEPLOY.md](DEPLOY.md) ｜ 發布版本 / Releases → [Releases](../../releases)
 
-## 這是什麼 / What is Moumou
+## 這是什麼 / What is Moumusic
 
-Moumou 是一個跑在瀏覽器裡的音樂播放器。播放器與音源徹底分開：前端不認識任何音源，只透過
+Moumusic 是一個跑在瀏覽器裡的音樂播放器。播放器與音源徹底分開：前端不認識任何音源，只透過
 一層插件介面問「給我一個可播的 URL」，音源自己去處理搜尋、扇出、救援、簽名。
 
 **app 出廠不帶任何音源** —— 開啟後要到「設置」頁貼上網址安裝，才能搜尋與播放。
@@ -31,7 +31,7 @@ Moumou 是一個跑在瀏覽器裡的音樂播放器。播放器與音源徹底�
 
 ## 音源
 
-### Moumou 官方聚合音源（需自行安裝）
+### Moumusic 官方聚合音源（需自行安裝）
 
 對外是一個音源，底下並發扇出到兩個子音源後交錯合併、同名同歌手去重：
 
@@ -42,7 +42,7 @@ Moumou 是一個跑在瀏覽器裡的音樂播放器。播放器與音源徹底�
 
 兩者都經一個公開 API 取得，**由瀏覽器直連**、不經本站後端。這樣上游的 IP 限流是
 各使用者各自計算，而不是全站共用一個出口；音源也因此不依賴任何特定後端，同一支
-插件貼到任何一份 Moumou 都能用。上游位址寫在音源檔裡，換一家
+插件貼到任何一份 Moumusic 都能用。上游位址寫在音源檔裡，換一家
 只要改那支檔案。
 
 **跨子源救援**：單一子源取不到音源時，會用歌名+歌手到其餘子源找同一首歌。比對前
@@ -94,7 +94,7 @@ Moumou 是一個跑在瀏覽器裡的音樂播放器。播放器與音源徹底�
 **匯出 / 匯入歌單**（「設置」→ 歌單）。匯出成 Markdown：
 
 ```markdown
-# Moumou 收藏
+# Moumusic 收藏
 
 匯出時間：2026-08-19 12:49
 共 2 首
@@ -118,7 +118,7 @@ Markdown 算繪時看不見，但匯入本站時能精確還原（含 id 與子�
 
 ## 推薦頁
 
-首頁可切換已啟用的平台（Moumou 聚合、网易云、QQ 音樂、酷我或 LX Music），並提供
+首頁可切換已啟用的平台（Moumusic 聚合、网易云、QQ 音樂、酷我或 LX Music），並提供
 熱門、粵語、中文、K-pop、歐美分類。官方聚合音源可回報网易云热歌榜等榜單說明；
 分類對應哪份榜單由音源決定並自報，前端不寫死。
 
@@ -213,7 +213,7 @@ IPA 建置必須在 macOS 26 + Xcode 26（或更新版本）執行，並刻意�
 ```bash
 pnpm install
 pnpm build:ipa
-# → ios/build/unsigned/Moumou-unsigned.ipa
+# → ios/build/unsigned/Moumusic-unsigned.ipa
 ```
 
 這個 IPA 只能作為檢查、CI 產物或後續簽名的輸入，不能直接安裝到 iPhone。要在真機
@@ -230,7 +230,7 @@ node packages/web/scripts/server.mjs      # 預設 :8788
 
 ```
 musicweb/
-│   └── Moumou 音源插件（由使用者自行匯入）
+│   └── Moumusic 音源插件（由使用者自行匯入）
 ├── packages/
 │   ├── core/                      # 播放器 + 插件管理器（型別與沙箱）
 │   └── web/

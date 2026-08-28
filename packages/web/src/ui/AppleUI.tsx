@@ -564,12 +564,12 @@ export default function AppleUI({ app }: { app: MusicApp }) {
         <div className="max-w-2xl mx-auto px-4 h-[68px] flex items-center gap-3">
           <img
             src="/logo.png"
-            alt="moumou"
+            alt="moumusic"
             className="wm-brand-mark w-[38px] h-[38px] rounded-[12px] object-cover"
           />
           <div className="leading-none">
-            <div className="wm-brand-kicker mb-1">MOUMOU ORIGINAL</div>
-            <span className="wm-brand-word text-[25px]">Moumou<span className="wm-accent">.</span></span>
+            <div className="wm-brand-kicker mb-1">MOUMUSIC ORIGINAL</div>
+            <span className="wm-brand-word text-[25px]">Moumusic<span className="wm-accent">.</span></span>
           </div>
         </div>
       </header>

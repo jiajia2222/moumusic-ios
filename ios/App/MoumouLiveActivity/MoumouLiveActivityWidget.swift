@@ -34,7 +34,7 @@ struct MoumouLiveActivityWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(context.state.lyric.isEmpty ? "Moumou" : context.state.lyric)
+                    Text(context.state.lyric.isEmpty ? "Moumusic" : context.state.lyric)
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.82))
                         .lineLimit(2)
@@ -65,7 +65,7 @@ private struct MoumouLiveActivityCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(state.title).font(.headline).lineLimit(1)
                 Text(state.artist).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                Text(state.lyric.isEmpty ? "Moumou" : state.lyric)
+                Text(state.lyric.isEmpty ? "Moumusic" : state.lyric)
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.8))
                     .lineLimit(1)

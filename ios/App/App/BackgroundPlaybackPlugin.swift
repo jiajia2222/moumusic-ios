@@ -33,9 +33,9 @@ public final class BackgroundPlaybackPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc public func update(_ call: CAPPluginCall) {
-        let title = call.getString("title") ?? "Moumou"
+        let title = call.getString("title") ?? "Moumusic"
         let artist = call.getString("artist") ?? ""
-        let album = call.getString("album") ?? "Moumou"
+        let album = call.getString("album") ?? "Moumusic"
         let artworkURL = call.getString("artworkUrl") ?? ""
         let lyric = call.getString("lyric") ?? ""
         let playing = call.getBool("playing") ?? false
@@ -195,7 +195,7 @@ public final class BackgroundPlaybackPlugin: CAPPlugin, CAPBridgedPlugin {
                     pushType: nil
                 )
             } catch {
-                NSLog("[Moumou] Live Activity unavailable: %@", error.localizedDescription)
+                NSLog("[Moumusic] Live Activity unavailable: %@", error.localizedDescription)
             }
         }
     }

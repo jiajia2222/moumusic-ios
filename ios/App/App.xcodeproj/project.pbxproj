@@ -405,14 +405,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11015;
+				CURRENT_PROJECT_VERSION = 11016;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.15;
+				MARKETING_VERSION = 1.10.16;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -427,14 +427,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11015;
+				CURRENT_PROJECT_VERSION = 11016;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.15;
+				MARKETING_VERSION = 1.10.16;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -448,11 +448,11 @@
 			buildSettings = {
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 11015;
+				CURRENT_PROJECT_VERSION = 11016;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MoumouLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
-				MARKETING_VERSION = 1.10.15;
+				MARKETING_VERSION = 1.10.16;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app.liveactivity;
 				PRODUCT_NAME = MoumouLiveActivity;
 				SKIP_INSTALL = YES;
@@ -466,11 +466,11 @@
 			buildSettings = {
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 11015;
+				CURRENT_PROJECT_VERSION = 11016;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MoumouLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
-				MARKETING_VERSION = 1.10.15;
+				MARKETING_VERSION = 1.10.16;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app.liveactivity;
 				PRODUCT_NAME = MoumouLiveActivity;
 				SKIP_INSTALL = YES;

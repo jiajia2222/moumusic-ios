@@ -10,8 +10,25 @@ test('iOS build entry is available and uses the Capacitor iOS platform', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 
   assert.equal(pkg.dependencies['@capacitor/ios'], '^8.5.0')
+  assert.equal(pkg.version, '1.10.16')
   assert.equal(pkg.scripts['build:ipa'], 'node scripts/build-ipa.mjs')
   assert.ok(fs.existsSync(path.join(ROOT, 'scripts', 'build-ipa.mjs')))
+})
+
+test('Moumusic is the user-facing app name', () => {
+  const capacitor = JSON.parse(fs.readFileSync(path.join(ROOT, 'capacitor.config.json'), 'utf8'))
+  assert.equal(capacitor.appName, 'Moumusic')
+
+  const appInfo = fs.readFileSync(path.join(ROOT, 'ios', 'App', 'App', 'Info.plist'), 'utf8')
+  assert.match(appInfo, /<key>CFBundleDisplayName<\/key>[\s\S]*<string>Moumusic<\/string>/)
+
+  const webIndex = fs.readFileSync(path.join(ROOT, 'packages', 'web', 'index.html'), 'utf8')
+  assert.match(webIndex, /<title>Moumusic<\/title>/)
+  assert.match(webIndex, /apple-mobile-web-app-title" content="Moumusic"/)
+
+  const manifest = fs.readFileSync(path.join(ROOT, 'packages', 'web', 'public', 'manifest.webmanifest'), 'utf8')
+  assert.match(manifest, /"name":\s*"Moumusic"/)
+  assert.match(manifest, /"short_name":\s*"Moumusic"/)
 })
 
 test('iOS app declares the audio background mode', () => {
@@ -37,7 +54,7 @@ test('release workflow builds on macOS and uploads the unsigned IPA', () => {
   assert.match(workflow, /runs-on:\s*macos-26/)
   assert.match(workflow, /pnpm build:ipa/)
   assert.match(workflow, /gh release create/)
-  assert.match(workflow, /ios\/build\/unsigned\/Moumou-unsigned\.ipa/)
+  assert.match(workflow, /ios\/build\/unsigned\/Moumusic-unsigned\.ipa/)
 
   const buildScript = fs.readFileSync(path.join(ROOT, 'scripts', 'build-ipa.mjs'), 'utf8')
   assert.match(buildScript, /SWIFT_VERSION=5\.0/)

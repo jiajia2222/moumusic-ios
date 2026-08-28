@@ -37,7 +37,7 @@ const _console = {
 }
 
 /**
- * 將常見的 LX Music／MusicFree 音源命名對齊 Moumou 的插件介面。
+ * 將常見的 LX Music／MusicFree 音源命名對齊 Moumusic 的插件介面。
  *
  * 不把任何第三方音源打包進 App；使用者仍需自行提供有權使用的 URL。
  * 這層只做方法名與回傳形狀的轉換，讓「musicSearch / musicUrl / musicLyric」

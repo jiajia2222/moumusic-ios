@@ -52,7 +52,7 @@ public class PlaybackService extends Service {
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
 
-    private String title = "WhyMusic";
+    private String title = "Moumusic";
     private String artist = "";
     private boolean playing = false;
 
@@ -113,7 +113,7 @@ public class PlaybackService extends Service {
 
     /** JS 推狀態過來：換歌、播放、暫停都走這裡 */
     void update(String title, String artist, boolean playing, long positionMs, long durationMs) {
-        this.title = title == null || title.isEmpty() ? "WhyMusic" : title;
+        this.title = title == null || title.isEmpty() ? "Moumusic" : title;
         this.artist = artist == null ? "" : artist;
         this.playing = playing;
 

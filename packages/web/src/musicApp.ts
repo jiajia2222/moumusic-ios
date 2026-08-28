@@ -153,7 +153,7 @@ export const RECOMMEND_CATEGORIES: { value: RecommendCategory; label: string }[]
   { value: 'western', label: '歐美' },
 ]
 
-/** 首頁可切換的實際音源。all 是 Moumou 聚合，其餘選項來自已安裝插件。 */
+/** 首頁可切換的實際音源。all 是 Moumusic 聚合，其餘選項來自已安裝插件。 */
 export type RecommendSource = 'all' | string
 export type RecommendSourceOption = { value: RecommendSource; label: string }
 
@@ -164,7 +164,7 @@ export function recommendSourceLabel(name: string): string {
   if (value.includes('qq') || value.includes('tencent')) return 'QQ音乐'
   if (value.includes('kuwo') || value.includes('酷我')) return '酷我'
   if (value.includes('lx') || value.includes('落雪')) return '落雪音源'
-  if (value === 'whymusic' || value === 'moumou') return 'Moumou'
+  if (value === 'whymusic' || value === 'moumou' || value === 'moumusic') return 'Moumusic'
   return name
 }
 
@@ -470,7 +470,7 @@ function applyMediaMetadata(item: MusicItem | null): void {
   ms.metadata = new MediaMetadata({
     title: item.title || t('未知曲目'),
     artist: item.artist || '未知歌手',
-    album: item.album || 'Moumou',
+    album: item.album || 'Moumusic',
     // Chrome for Android 媒體通知的目標尺寸是 512x512。搜尋結果只帶 picId、
     // 沒有 artwork（封面要另外解析），那時明確給站台圖示，別留空讓系統自己猜
     artwork: item.artwork
@@ -623,7 +623,7 @@ export function useMusicApp() {
   const [recommendSongs, setRecommendSongs] = useState<MusicItem[]>([])
 
   const recommendSources = useMemo<RecommendSourceOption[]>(() => {
-    const options: RecommendSourceOption[] = [{ value: 'all', label: 'Moumou' }]
+    const options: RecommendSourceOption[] = [{ value: 'all', label: 'Moumusic' }]
     for (const plugin of pluginManager.getEnabledPlugins()) {
       if (options.some(option => option.value === plugin.name)) continue
       options.push({ value: plugin.name, label: recommendSourceLabel(plugin.name) })
@@ -915,7 +915,7 @@ export function useMusicApp() {
     syncNativeMedia({
       title: playingItem.title || '',
       artist: playingItem.artist || '',
-      album: playingItem.album || 'Moumou',
+      album: playingItem.album || 'Moumusic',
       artworkUrl: playingItem.artwork || playingItem.cover || '',
       lyric: lyricLines[lyricIndex]?.text || '',
       lyricIndex,
@@ -1375,7 +1375,7 @@ export function useMusicApp() {
     if (isNative() && playingItem) {
       syncNativeMedia({
         title: playingItem.title || '', artist: playingItem.artist || '',
-        album: playingItem.album || 'Moumou',
+        album: playingItem.album || 'Moumusic',
         artworkUrl: playingItem.artwork || playingItem.cover || '',
         lyric: lyricLines[lyricIndex]?.text || '', lyricIndex,
         playing: isPlaying, positionSec: target,
@@ -1579,14 +1579,14 @@ export function useMusicApp() {
     const pad = (n: number) => String(n).padStart(2, '0')
     const when = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
     const lines = [
-      `# Moumou ${t('收藏')}`,
+      `# Moumusic ${t('收藏')}`,
       '',
       t('匯出時間：{when}', { when }),
       t('共 {n} 首', { n: favorites.length }),
       '',
       ...favorites.map((f, i) => `${i + 1}. ${f.title || t('未知曲目')} — ${f.artist || t('未知歌手')}`),
       '',
-      '<!-- moumou:favorites:v1',
+      '<!-- moumusic:favorites:v1',
       // 欄位縮成單字母：這段是給程式看的，沒必要佔滿檔案
       JSON.stringify(favorites.map(f => ({
         t: f.title, a: f.artist, b: f.album,
@@ -1598,7 +1598,7 @@ export function useMusicApp() {
     ]
     try {
       await exportTextFile(
-        `moumou-${t('收藏')}-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.md`,
+        `moumusic-${t('收藏')}-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.md`,
         lines.join('\n'),
       )
       showNotification(t('已匯出 {n} 首', { n: favorites.length }), 'success')
@@ -1655,7 +1655,7 @@ export function useMusicApp() {
     }
 
     // ── 路徑 1：本站匯出的檔案 ──
-    const embedded = raw.match(/<!--\s*(?:moumou|whymusic):favorites:v1\s*([\s\S]*?)-->/)
+    const embedded = raw.match(/<!--\s*(?:moumusic|moumou|whymusic):favorites:v1\s*([\s\S]*?)-->/)
     if (embedded) {
       try {
         const parsed = JSON.parse(embedded[1].trim())

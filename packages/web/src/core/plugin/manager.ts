@@ -20,7 +20,7 @@ function normalizeItemList(result: any): any[] {
 const firstValue = (...values: any[]): any => values.find(value => value !== undefined && value !== null && value !== '')
 
 /**
- * 將 LX Music 常見的欄位名轉成 Moumou 的 MusicItem。
+ * 將 LX Music 常見的欄位名轉成 Moumusic 的 MusicItem。
  *
  * 這裡只補標準欄位，不刪除插件自己的欄位；解析播放位址時仍會拿到完整
  * 原始物件。這讓 `name/singer/pic/interval` 與 MusicFree 的
