@@ -191,6 +191,21 @@ pnpm build:cf       # 前端 + _worker.js（不含音源），戳記只算一次
 pnpm typecheck
 ```
 
+### iOS 未簽名 IPA
+
+專案現在也包含 Capacitor iOS 原生工程。IPA 建置必須在 macOS + Xcode 執行，並刻意
+關閉程式碼簽名：
+
+```bash
+pnpm install
+pnpm build:ipa
+# → ios/build/unsigned/WhyMusic-unsigned.ipa
+```
+
+這個 IPA 只能作為檢查、CI 產物或後續簽名的輸入，不能直接安裝到 iPhone。要在真機
+安裝，仍需使用 Apple 開發者憑證與 provisioning profile 重新簽名。iOS 原生工程把
+背景音訊模式與 AVAudioSession 設為音樂播放用途，鎖屏播放由系統音訊工作階段維持。
+
 自架後端（同時服務前端與 API）：
 
 ```bash
@@ -223,7 +238,9 @@ musicweb/
 │   ├── build-cf.mjs               # 完整建置（戳記只算一次傳給前端與 worker）
 │   ├── build-stamp.mjs            # 建置戳記
 │   ├── build-worker.mjs           # 打包 worker → dist/_worker.js
-│   └── build-cf-zip.mjs           # 產出可拖拉上傳的 zip
+│   ├── build-cf-zip.mjs           # 產出可拖拉上傳的 zip
+│   └── build-ipa.mjs              # macOS 上產出未簽名 iOS IPA
+├── ios/                           # Capacitor iOS 原生工程
 ├── .env.example
 └── DEPLOY.md
 ```
