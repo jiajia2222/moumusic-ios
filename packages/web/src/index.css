@@ -5,9 +5,60 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #1a1a2e;
+  background: #0d0f0d;
   color: #fff;
   min-height: 100vh;
+}
+
+:root {
+  --wm-accent: #ff765c;
+  --wm-accent-soft: rgba(255, 118, 92, 0.16);
+  --wm-lime: #c8f36a;
+  --wm-surface: rgba(255, 255, 255, 0.075);
+  --wm-ink: #f5f2e9;
+}
+
+button, input, textarea, select { font: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--wm-lime);
+  outline-offset: 3px;
+}
+
+/* WhyMusic 的品牌底色：像唱片店夜间橱窗，猫标识是唯一高对比图形。 */
+.wm-shell {
+  background:
+    radial-gradient(ellipse 70% 34% at 50% -5%, rgba(255, 118, 92, 0.12), transparent 72%),
+    #0d0f0d;
+  color: var(--wm-ink);
+}
+
+.wm-brand-mark {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 8px 24px rgba(255, 118, 92, 0.18);
+}
+
+.wm-brand-word {
+  letter-spacing: -0.055em;
+  font-weight: 780;
+}
+
+.wm-brand-kicker {
+  color: var(--wm-accent);
+  letter-spacing: 0.18em;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.wm-accent { color: var(--wm-accent); }
+.wm-accent-bg { background: var(--wm-accent); }
+.wm-accent-soft { background: var(--wm-accent-soft); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .wm-brand-mark { animation: wm-brand-breathe 5s ease-in-out infinite; }
+}
+
+@keyframes wm-brand-breathe {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255,255,255,.16), 0 8px 24px rgba(255,118,92,.16); }
+  50% { box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 10px 32px rgba(255,118,92,.30); }
 }
 
 #root {
