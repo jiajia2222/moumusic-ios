@@ -2,7 +2,7 @@
  * 蘋果平面風 UI。
  *
  * 設計取向照 iOS 的幾個慣例：大標題、分段控制（segmented control）、
- * 毛玻璃底欄、克制的圓角與陰影、單一強調色（iOS 藍 #0A84FF），
+ * 毛玻璃底欄、克制的圓角與陰影、WhyMusic 珊瑚橙強調色（#ff765c），
  * 以留白和層次取代邊框。深色底以 iOS 的近黑（#000 / #1C1C1E）為基調，
  * 不用漸層 —— 平面風的重點是乾淨，不是華麗。
  */
@@ -283,7 +283,7 @@ function Row({
     <div
       onClick={onClick}
       className={`group flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
-        active ? 'bg-[#0A84FF]/15' : 'active:bg-white/10 md:hover:bg-white/[0.06]'
+        active ? 'bg-[#ff765c]/15' : 'active:bg-white/10 md:hover:bg-white/[0.06]'
       }`}
     >
       {/*
@@ -292,7 +292,7 @@ function Row({
       */}
       <div className={`relative w-11 h-11 rounded-[8px] flex items-center justify-center flex-shrink-0
                        text-[15px] font-semibold overflow-hidden ${
-        active ? 'bg-[#0A84FF] text-white' : 'bg-white/10 text-white/70'
+        active ? 'bg-[#ff765c] text-white' : 'bg-white/10 text-white/70'
       }`}>
         <span>{(item.title || '♪')[0]}</span>
         {item.artwork && (
@@ -301,7 +301,7 @@ function Row({
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <div className={`text-[15px] leading-tight truncate ${active ? 'text-[#0A84FF] font-medium' : 'text-white'}`}>
+        <div className={`text-[15px] leading-tight truncate ${active ? 'text-[#ff765c] font-medium' : 'text-white'}`}>
           {item.title || t('未知曲目')}
         </div>
         <div className="text-[13px] text-white/45 truncate mt-0.5">
@@ -333,8 +333,8 @@ function Row({
         aria-label={downloading ? t('下載中') : t('下載')}
         className={`w-8 h-8 rounded-full flex items-center justify-center transition flex-shrink-0
                     ${downloading
-                      ? 'text-[#0A84FF]'
-                      : 'text-white/35 hover:text-[#0A84FF] hover:bg-white/10'}`}
+                      ? 'text-[#ff765c]'
+                      : 'text-white/35 hover:text-[#ff765c] hover:bg-white/10'}`}
       >
         {downloading ? (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="animate-spin">
@@ -469,12 +469,14 @@ export default function AppleUI({ app }: { app: MusicApp }) {
     isFavorite, isPlaying, keyword, loadMore, loading,
     loadingMore, lockedItem, notification, play, playMode, playNext, playPrev, playingItem,
     pluginError, pluginKey, pluginName, pluginToggles, pluginUrl, recommendCategory,
-    recommendLoading, recommendSongs, recommendUnsupported, removePlugin,
+    recommendLoading, recommendSongs, recommendUnsupported, recommendSource,
+    recommendSources, removePlugin,
     results, search,
     quality, recentSongs, showcaseSongs, recommendCaption, refreshRecommend, removeDownload, searchType, seekTo,
     serverVersion,
     setCurrentView, setQuality, setKeyword, setLockedItem, setPluginName, setPluginUrl,
     setImportText, setSearchPage, setSearchType, setSyncInput, switchRecommendCategory,
+    switchRecommendSource,
     syncAvailable, syncBusy,
     syncCode, syncInput, toggleFavorite, togglePlay, togglePlugin,
     lyricLines, lyricLoading, lyricIndex, copyLyrics,
@@ -545,7 +547,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
 
   return (
     <div
-      className="bg-black text-white flex flex-col"
+      className="wm-shell flex flex-col"
       style={{
         // 用 index.html 定義的 --app-height（dvh，手機才會真正滿版）
         height: 'var(--app-height, 100vh)',
@@ -559,13 +561,16 @@ export default function AppleUI({ app }: { app: MusicApp }) {
         style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), var(--wm-inset-top, 0px))' }}
       >
         {/* logo 與站名放大 1.5 倍（22→33px、16→24px），列高跟著加大才不會被裁掉 */}
-        <div className="max-w-2xl mx-auto px-4 h-[62px] flex items-center gap-3">
+        <div className="max-w-2xl mx-auto px-4 h-[68px] flex items-center gap-3">
           <img
             src="/logo.png"
-            alt="W"
-            className="w-[33px] h-[33px] rounded-[9px] object-cover"
+            alt="moumou"
+            className="wm-brand-mark w-[38px] h-[38px] rounded-[12px] object-cover"
           />
-          <span className="text-[24px] font-semibold tracking-tight">WhyMusic</span>
+          <div className="leading-none">
+            <div className="wm-brand-kicker mb-1">MOUMOU ORIGINAL</div>
+            <span className="wm-brand-word text-[25px]">Moumou<span className="wm-accent">.</span></span>
+          </div>
         </div>
       </header>
       {/* 通知：iOS 風格的浮動膠囊 */}
@@ -654,6 +659,46 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                   </div>
                 </div>
               )}
+              {/* 平台选择只列出真实已启用的音源；选中后推荐榜单与播放派发使用同一平台。 */}
+              <div className="px-4 pt-4">
+                <div className="flex items-center justify-between gap-3 rounded-[14px]
+                                bg-white/[0.07] px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium text-white/45 uppercase tracking-wide">
+                      {t('平台')}
+                    </div>
+                    <div className="text-[15px] mt-0.5 truncate">
+                      {t('首页榜单与搜索结果来自已启用的平台')}
+                    </div>
+                  </div>
+                  <div className="relative flex-shrink-0">
+                    <select
+                      value={recommendSource}
+                      onChange={e => { void switchRecommendSource(e.currentTarget.value) }}
+                      aria-label={t('平台')}
+                      className="appearance-none bg-white/15 rounded-[10px] pl-3 pr-8 py-2
+                                 text-[15px] outline-none active:opacity-70 focus:bg-white/20
+                                 transition cursor-pointer max-w-[9rem]"
+                    >
+                      {recommendSources.map(option => (
+                        <option key={option.value} value={option.value} className="bg-[#1C1C1E] text-white">
+                          {t(option.label)}
+                        </option>
+                      ))}
+                    </select>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                      <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.6"
+                        strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+                {recommendSources.length === 1 && (
+                  <div className="text-[12px] text-white/30 mt-2 px-1 leading-relaxed">
+                    {t('安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。')}
+                  </div>
+                )}
+              </div>
               {/*
                 分類標籤與重新整理**同一列**。原本刷新孤零零掛在右上角、標籤在下一列，
                 中間還隔著一段空白，看起來像兩個不相干的東西。並排之後這一列就是
@@ -776,7 +821,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                   <button
                     onClick={() => { setSearchPage(1); search(1) }}
                     disabled={loading || !keyword.trim()}
-                    className="px-4 rounded-[12px] bg-[#0A84FF] text-[15px] font-medium
+                    className="px-4 rounded-[12px] bg-[#ff765c] text-[15px] font-medium
                                disabled:opacity-40 active:opacity-70 transition"
                   >
                     {t('搜尋')}
@@ -829,7 +874,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
             <>
               <div className="px-4 pt-6 pb-4">
                 <button onClick={goBackToSearch}
-                  className="flex items-center gap-1 text-[15px] text-[#0A84FF] active:opacity-60 mb-5">
+                  className="flex items-center gap-1 text-[15px] text-[#ff765c] active:opacity-60 mb-5">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.8"
                       strokeLinecap="round" strokeLinejoin="round" />
@@ -881,7 +926,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
           {currentView === 'plugins' && showDownloads && (
             <div className="px-4 pt-6 pb-4">
               <button onClick={() => setShowDownloads(false)}
-                className="flex items-center gap-1 text-[15px] text-[#0A84FF] active:opacity-60 mb-5">
+                className="flex items-center gap-1 text-[15px] text-[#ff765c] active:opacity-60 mb-5">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.8"
                     strokeLinecap="round" strokeLinejoin="round" />
@@ -910,7 +955,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                             {/* 顯示**實際**存下來的音質 —— 音源沒有高音質版本時會降級，
                                 寫「你選的那檔」會是騙人的 */}
                             {d.bitrate && (
-                              <span className="px-1.5 py-0.5 rounded-md bg-[#0A84FF]/20 text-[#0A84FF]
+                              <span className="px-1.5 py-0.5 rounded-md bg-[#ff765c]/20 text-[#ff765c]
                                                text-[11px] font-medium tabular-nums">
                                 {d.bitrate} kbps
                               </span>
@@ -1045,8 +1090,8 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                 </div>
               )}
               {installedPlugins.length === 0 && !pluginError && (
-                <div className="mt-5 p-3.5 rounded-[12px] bg-[#0A84FF]/15 border border-[#0A84FF]/25">
-                  <div className="text-[14px] font-medium text-[#0A84FF]">{t('尚未安裝音源')}</div>
+                <div className="mt-5 p-3.5 rounded-[12px] bg-[#ff765c]/15 border border-[#ff765c]/25">
+                  <div className="text-[14px] font-medium text-[#ff765c]">{t('尚未安裝音源')}</div>
                   <div className="text-[13px] text-white/55 mt-0.5 leading-relaxed">
                     {t('在下方貼上音源網址並安裝，之後即可搜尋與播放。')}
                   </div>
@@ -1068,10 +1113,13 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                     className="w-full px-3 py-2.5 bg-black/30 rounded-[10px] text-[15px]
                                placeholder:text-white/30 outline-none focus:bg-black/50 transition" />
                   <button onClick={installPluginFromURL} disabled={loading || !pluginUrl.trim()}
-                    className="w-full py-2.5 rounded-[10px] bg-[#0A84FF] text-[15px] font-medium
+                    className="w-full py-2.5 rounded-[10px] bg-[#ff765c] text-[15px] font-medium
                                disabled:opacity-40 active:opacity-70 transition">
                     {loading ? t('安裝中…') : t('安裝')}
                   </button>
+                  <div className="text-[12px] text-white/35 leading-relaxed">
+                    {t('兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。')}
+                  </div>
                   {/*
                     這裡刻意**不**提供任何音源網址。這個 app 不隨附音源、產物裡
                     沒有任何音源檔，也不預設任何來源 —— 音源要用哪一個由使用者
@@ -1193,7 +1241,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                       </label>
                       <button onClick={() => importFavorites(importText)}
                         disabled={importBusy || !importText.trim()}
-                        className="flex-1 py-3 rounded-[11px] bg-[#0A84FF] text-[15px] font-medium
+                        className="flex-1 py-3 rounded-[11px] bg-[#ff765c] text-[15px] font-medium
                                    active:opacity-70 disabled:opacity-40 transition">
                         {importBusy ? t('比對中 {progress}', { progress: importProgress }) : t('匯入收藏')}
                       </button>
@@ -1243,7 +1291,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                                    tracking-[0.15em] placeholder:tracking-normal
                                    placeholder:text-white/30 outline-none focus:bg-white/10 transition" />
                       <button onClick={applySyncCode} disabled={syncBusy || !syncInput.trim()}
-                        className="w-full py-3 rounded-[11px] bg-[#0A84FF] text-[15px] font-medium
+                        className="w-full py-3 rounded-[11px] bg-[#ff765c] text-[15px] font-medium
                                    active:opacity-70 disabled:opacity-40 transition">
                         {t('套用')}
                       </button>
@@ -1410,7 +1458,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
               <button onClick={cyclePlayMode} title={t(PLAY_MODE_LABEL[playMode])}
                 aria-label={t(PLAY_MODE_LABEL[playMode])}
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-[15px] transition ${
-                  playMode === 'off' ? 'text-white/30 active:bg-white/10' : 'text-[#0A84FF] bg-[#0A84FF]/15'
+                  playMode === 'off' ? 'text-white/30 active:bg-white/10' : 'text-[#ff765c] bg-[#ff765c]/15'
                 }`}>
                 {PLAY_MODE_ICON[playMode]}
               </button>
@@ -1433,7 +1481,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                           text-[11px] font-medium transition-colors ${
                 // 未選中的圖標比文字亮一階（白 70% vs 40%）—— 一排灰字上面配一排
                 // 同樣暗的圖標會整個沉下去，圖標本來就是拿來一眼認位置的
-                currentView === tab.key ? 'text-[#0A84FF]' : 'text-white/40'
+                currentView === tab.key ? 'text-[#ff765c]' : 'text-white/40'
               }`}>
               <span className={currentView === tab.key ? '' : 'text-white/70'}>
                 {tab.icon}

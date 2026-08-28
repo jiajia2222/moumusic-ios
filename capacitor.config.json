@@ -1,6 +1,6 @@
 {
   "appId": "xyz.whymusic.app",
-  "appName": "WhyMusic",
+  "appName": "Moumou",
   "webDir": "packages/web/dist",
   "backgroundColor": "#000000",
   "android": {

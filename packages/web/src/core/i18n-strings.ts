@@ -1149,6 +1149,80 @@ const pt: Dict = {
   '跟隨系統': 'Conforme o sistema',
 }
 
+const platformTranslations: Record<Exclude<Lang, 'zh-Hant'>, Dict> = {
+  'zh-Hans': {
+    '平台': '平台',
+    '首页榜单与搜索结果来自已启用的平台': '首页榜单与搜索结果来自已启用的平台',
+    '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。': '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。',
+    '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。': '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。',
+    '网易云': '网易云', 'QQ音乐': 'QQ音乐', '酷我': '酷我', '落雪音源': '落雪音源',
+    '网易云热歌榜': '网易云热歌榜', '网易云粤语榜': '网易云粤语榜', '网易云新歌榜': '网易云新歌榜',
+    '网易云韩语榜': '网易云韩语榜', '网易云欧美热歌榜': '网易云欧美热歌榜',
+  },
+  en: {
+    '平台': 'Platform',
+    '首页榜单与搜索结果来自已启用的平台': 'Home charts and search results use enabled platforms',
+    '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。': 'Install a NetEase, QQ Music, Kuwo, or LX Music source to switch platforms here.',
+    '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。': 'Compatible with LX Music and MusicFree source formats; import only sources you are allowed to use.',
+    '网易云': 'NetEase Cloud Music', 'QQ音乐': 'QQ Music', '酷我': 'Kuwo', '落雪音源': 'LX Music',
+    '网易云热歌榜': 'NetEase Hot Songs', '网易云粤语榜': 'NetEase Cantonese chart', '网易云新歌榜': 'NetEase New Songs',
+    '网易云韩语榜': 'NetEase K-pop chart', '网易云欧美热歌榜': 'NetEase Western chart',
+  },
+  ja: {
+    '平台': 'プラットフォーム',
+    '首页榜单与搜索结果来自已启用的平台': 'ホームのランキングと検索結果は有効なプラットフォームを使用',
+    '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。': 'NetEase、QQ Music、Kuwo、LX Music の音源を追加すると切り替えられます。',
+    '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。': 'LX Music と MusicFree の音源形式に対応しています。利用権限のある音源のみ追加してください。',
+    '网易云': '网易云', 'QQ音乐': 'QQ Music', '酷我': 'Kuwo', '落雪音源': 'LX Music',
+    '网易云热歌榜': '网易云 人気曲', '网易云粤语榜': '网易云 広東語', '网易云新歌榜': '网易云 新曲',
+    '网易云韩语榜': '网易云 K-pop', '网易云欧美热歌榜': '网易云 欧米',
+  },
+  ko: {
+    '平台': '플랫폼',
+    '首页榜单与搜索结果来自已启用的平台': '홈 차트와 검색 결과는 활성화된 플랫폼을 사용합니다',
+    '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。': 'NetEase, QQ Music, Kuwo 또는 LX Music 소스를 설치하면 플랫폼을 전환할 수 있습니다.',
+    '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。': 'LX Music 및 MusicFree 소스 형식을 지원합니다. 사용 권한이 있는 소스만 가져오세요.',
+    '网易云': 'NetEase Cloud', 'QQ音乐': 'QQ Music', '酷我': 'Kuwo', '落雪音源': 'LX Music',
+    '网易云热歌榜': 'NetEase 인기 차트', '网易云粤语榜': 'NetEase 광둥어 차트', '网易云新歌榜': 'NetEase 신곡 차트',
+    '网易云韩语榜': 'NetEase K-pop 차트', '网易云欧美热歌榜': 'NetEase 서양 음악 차트',
+  },
+  ru: {
+    '平台': 'Платформа',
+    '首页榜单与搜索结果来自已启用的平台': 'Чарты и поиск используют включённые платформы',
+    '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。': 'Установите источник NetEase, QQ Music, Kuwo или LX Music, чтобы переключать платформы.',
+    '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。': 'Совместимо с форматами LX Music и MusicFree; добавляйте только разрешённые источники.',
+    '网易云': 'NetEase Cloud', 'QQ音乐': 'QQ Music', '酷我': 'Kuwo', '落雪音源': 'LX Music',
+    '网易云热歌榜': 'Хиты NetEase', '网易云粤语榜': 'Кантонский чарт NetEase', '网易云新歌榜': 'Новинки NetEase',
+    '网易云韩语榜': 'K-pop чарт NetEase', '网易云欧美热歌榜': 'Западный чарт NetEase',
+  },
+  es: {
+    '平台': 'Plataforma',
+    '首页榜单与搜索结果来自已启用的平台': 'Las listas y búsquedas usan plataformas activadas',
+    '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。': 'Instala una fuente de NetEase, QQ Music, Kuwo o LX Music para cambiar de plataforma.',
+    '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。': 'Compatible con fuentes LX Music y MusicFree; importa solo fuentes autorizadas.',
+    '网易云': 'NetEase Cloud Music', 'QQ音乐': 'QQ Music', '酷我': 'Kuwo', '落雪音源': 'LX Music',
+    '网易云热歌榜': 'Éxitos de NetEase', '网易云粤语榜': 'Lista cantonesa de NetEase', '网易云新歌榜': 'Novedades de NetEase',
+    '网易云韩语榜': 'Lista K-pop de NetEase', '网易云欧美热歌榜': 'Lista occidental de NetEase',
+  },
+  pt: {
+    '平台': 'Plataforma',
+    '首页榜单与搜索结果来自已启用的平台': 'Listas e buscas usam plataformas ativadas',
+    '安装网易云、QQ音乐、酷我或落雪/LX Music 音源后，可在这里切换平台。': 'Instale uma fonte NetEase, QQ Music, Kuwo ou LX Music para trocar de plataforma.',
+    '兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。': 'Compatível com fontes LX Music e MusicFree; importe apenas fontes autorizadas.',
+    '网易云': 'NetEase Cloud Music', 'QQ音乐': 'QQ Music', '酷我': 'Kuwo', '落雪音源': 'LX Music',
+    '网易云热歌榜': 'Sucessos da NetEase', '网易云粤语榜': 'Parada cantonesa da NetEase', '网易云新歌榜': 'Novidades da NetEase',
+    '网易云韩语榜': 'Parada K-pop da NetEase', '网易云欧美热歌榜': 'Parada ocidental da NetEase',
+  },
+}
+
+Object.assign(zhHans, platformTranslations['zh-Hans'])
+Object.assign(en, platformTranslations.en)
+Object.assign(ja, platformTranslations.ja)
+Object.assign(ko, platformTranslations.ko)
+Object.assign(ru, platformTranslations.ru)
+Object.assign(es, platformTranslations.es)
+Object.assign(pt, platformTranslations.pt)
+
 export const STRINGS: Record<Exclude<Lang, 'zh-Hant'>, Dict> = {
   'zh-Hans': zhHans,
   en, ja, ko, ru, es, pt,

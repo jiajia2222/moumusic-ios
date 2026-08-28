@@ -50,6 +50,7 @@ const STORAGE_RECENT = 'whymusic-recent'
 /** 留幾首。畫面上是一排橫捲的方塊，20 首捲起來剛好，再多只是佔 localStorage */
 const RECENT_LIMIT = 20
 const STORAGE_RECOMMEND_CAT = 'musicfree-recommend-category'
+const STORAGE_RECOMMEND_SOURCE = 'moumou-recommend-source'
 const STORAGE_QUALITY = 'musicfree-quality'
 
 /**
@@ -152,6 +153,30 @@ export const RECOMMEND_CATEGORIES: { value: RecommendCategory; label: string }[]
   { value: 'western', label: '歐美' },
 ]
 
+/** 首頁可切換的實際音源。all 是 Moumou 聚合，其餘選項來自已安裝插件。 */
+export type RecommendSource = 'all' | string
+export type RecommendSourceOption = { value: RecommendSource; label: string }
+
+/** 將插件自報的名稱映射成使用者熟悉的平台名；未知插件保留原名。 */
+export function recommendSourceLabel(name: string): string {
+  const value = String(name || '').toLowerCase()
+  if (value.includes('netease') || value.includes('163') || value.includes('网易')) return '网易云'
+  if (value.includes('qq') || value.includes('tencent')) return 'QQ音乐'
+  if (value.includes('kuwo') || value.includes('酷我')) return '酷我'
+  if (value.includes('lx') || value.includes('落雪')) return '落雪音源'
+  if (value === 'whymusic' || value === 'moumou') return 'Moumou'
+  return name
+}
+
+/** WhyMusic 聚合后端当前提供的官方榜单说明。实际曲目仍由插件返回。 */
+export const OFFICIAL_PLAYLISTS: Record<RecommendCategory, string> = {
+  hot: '网易云热歌榜',
+  cantonese: '网易云粤语榜',
+  cpop: '网易云新歌榜',
+  kpop: '网易云韩语榜',
+  western: '网易云欧美热歌榜',
+}
+
 export type PlayMode = 'auto' | 'one' | 'off'
 const PLAY_MODE_ORDER: PlayMode[] = ['auto', 'one', 'off']
 export const PLAY_MODE_ICON: Record<PlayMode, string> = { auto: '🔁', one: '🔂', off: '➡️' }
@@ -246,10 +271,12 @@ const rotateBucketOf = (ms: number) => Math.floor(ms / (24 * 60 * 60 * 1000))
 
 const readRecommendCache = (
   category: RecommendCategory,
+  source: RecommendSource = 'all',
 ): { songs: MusicItem[]; caption?: string; usable: boolean; shouldRevalidate: boolean } | null => {
   try {
     const all = JSON.parse(localStorage.getItem(STORAGE_RECOMMEND_CACHE) || '{}')
-    const hit: RecommendCacheEntry | undefined = all[category]
+    const key = source === 'all' ? category : `${source}::${category}`
+    const hit: RecommendCacheEntry | undefined = all[key]
     if (!hit || !Array.isArray(hit.songs) || hit.songs.length === 0) return null
     const age = Date.now() - hit.at
     // 快取裡的歌指向已經不存在的音源就作廢 —— 顯示出來也是每首都
@@ -307,11 +334,15 @@ const clearRecommendCache = () => {
 }
 
 const writeRecommendCache = (
-  category: RecommendCategory, songs: MusicItem[], caption?: string,
+  category: RecommendCategory,
+  songs: MusicItem[],
+  caption?: string,
+  source: RecommendSource = 'all',
 ) => {
   try {
     const all = JSON.parse(localStorage.getItem(STORAGE_RECOMMEND_CACHE) || '{}')
-    all[category] = { at: Date.now(), songs, caption }
+    const key = source === 'all' ? category : `${source}::${category}`
+    all[key] = { at: Date.now(), songs, caption }
     localStorage.setItem(STORAGE_RECOMMEND_CACHE, JSON.stringify(all))
   } catch (e) {
     // 配額滿或關閉了儲存：快取只是加速，寫不進去不該影響功能
@@ -439,7 +470,7 @@ function applyMediaMetadata(item: MusicItem | null): void {
   ms.metadata = new MediaMetadata({
     title: item.title || t('未知曲目'),
     artist: item.artist || '未知歌手',
-    album: item.album || 'WhyMusic',
+    album: item.album || 'Moumou',
     // Chrome for Android 媒體通知的目標尺寸是 512x512。搜尋結果只帶 picId、
     // 沒有 artwork（封面要另外解析），那時明確給站台圖示，別留空讓系統自己猜
     artwork: item.artwork
@@ -584,7 +615,21 @@ export function useMusicApp() {
       ? (saved as RecommendCategory)
       : DEFAULT_RECOMMEND_CATEGORY
   })
+  const [recommendSource, setRecommendSourceState] = useState<RecommendSource>(() => {
+    return localStorage.getItem(STORAGE_RECOMMEND_SOURCE) || 'all'
+  })
+  const recommendSourceRef = useRef<RecommendSource>(recommendSource)
+  recommendSourceRef.current = recommendSource
   const [recommendSongs, setRecommendSongs] = useState<MusicItem[]>([])
+
+  const recommendSources = useMemo<RecommendSourceOption[]>(() => {
+    const options: RecommendSourceOption[] = [{ value: 'all', label: 'Moumou' }]
+    for (const plugin of pluginManager.getEnabledPlugins()) {
+      if (options.some(option => option.value === plugin.name)) continue
+      options.push({ value: plugin.name, label: recommendSourceLabel(plugin.name) })
+    }
+    return options
+  }, [pluginKey])
 
   /**
    * 推薦頁最上面那排要顯示什麼。
@@ -870,22 +915,35 @@ export function useMusicApp() {
     syncNativeMedia({
       title: playingItem.title || '',
       artist: playingItem.artist || '',
+      album: playingItem.album || 'Moumou',
+      artworkUrl: playingItem.artwork || playingItem.cover || '',
+      lyric: lyricLines[lyricIndex]?.text || '',
+      lyricIndex,
       playing: isPlaying,
       positionSec: currentTimeRef.current,
       durationSec: Number.isFinite(duration) ? duration : 0,
     })
-  }, [playingItem, isPlaying, duration])
+  }, [playingItem, isPlaying, duration, lyricIndex, lyricLines])
 
   useEffect(() => {
     if (!isNative()) return
-    onNativeControl(({ action, seekTime }) => {
+    let disposed = false
+    let removeListener: (() => void) | undefined
+    void onNativeControl(({ action, seekTime }) => {
       const a = mediaActionsRef.current
       if (action === 'play') a.play()
       else if (action === 'pause') a.pause()
       else if (action === 'next') a.next()
       else if (action === 'previous') a.prev()
       else if (action === 'seek' && typeof seekTime === 'number') a.seek(seekTime)
+    }).then(remove => {
+      if (disposed) remove()
+      else removeListener = remove
     })
+    return () => {
+      disposed = true
+      removeListener?.()
+    }
   }, [])
 
   /**
@@ -957,8 +1015,11 @@ export function useMusicApp() {
     
     try {
       let newResults: any[] = []
-      const enabledPlugins = pluginManager.getEnabledPlugins()
-      console.log('[App] Searching page:', pageNum, 'plugins:', enabledPlugins.map(p => p.name))
+      const searchSource = recommendSourceRef.current
+      const enabledPlugins = pluginManager.getEnabledPlugins().filter(plugin =>
+        searchSource === 'all' || plugin.name === searchSource,
+      )
+      console.log('[App] Searching page:', pageNum, 'source:', searchSource, 'plugins:', enabledPlugins.map(p => p.name))
       
       for (const plugin of enabledPlugins) {
         try {
@@ -1314,6 +1375,9 @@ export function useMusicApp() {
     if (isNative() && playingItem) {
       syncNativeMedia({
         title: playingItem.title || '', artist: playingItem.artist || '',
+        album: playingItem.album || 'Moumou',
+        artworkUrl: playingItem.artwork || playingItem.cover || '',
+        lyric: lyricLines[lyricIndex]?.text || '', lyricIndex,
         playing: isPlaying, positionSec: target,
         durationSec: Number.isFinite(duration) ? duration : 0,
       })
@@ -1339,13 +1403,14 @@ export function useMusicApp() {
     category: RecommendCategory,
     opts: { force?: boolean } = {},
   ) => {
+    const source = recommendSourceRef.current
     setRecommendCategory(category)
     localStorage.setItem(STORAGE_RECOMMEND_CAT, category)
     setRecommendUnsupported(false)
 
     // force 也照樣讀快取：快取存的是**池子**，刷新第一件事就是從它重洗出另一批，
     // 使用者按下去就看到新清單，不必等網路（背景照樣去抓新的池子）。
-    const hit = readRecommendCache(category)
+    const hit = readRecommendCache(category, source)
     // 太舊的快取不拿來墊檔（當作沒有），但它的存在本身不影響要不要重抓
     const cached = hit && hit.usable ? hit : null
     if (cached && opts.force) {
@@ -1376,7 +1441,9 @@ export function useMusicApp() {
 
     try {
       await waitForPlugins()
-      const enabled = pluginManager.getEnabledPlugins()
+      const enabled = pluginManager.getEnabledPlugins().filter(plugin =>
+        source === 'all' || plugin.name === source,
+      )
       if (enabled.length === 0) {
         if (!cached) setRecommendUnsupported(true)
         return
@@ -1397,6 +1464,9 @@ export function useMusicApp() {
           songs = songs.concat(res.songs)
           // 第一個有給說明的音源說了算。多個音源同時提供推薦時硬要合併說明只會很亂
           if (!caption && res.caption) caption = res.caption
+          if (!caption && /whymusic|moumou/i.test(plugin.name)) {
+            caption = t(OFFICIAL_PLAYLISTS[category])
+          }
         } catch (e) {
           console.error(`[recommend] ${plugin.name} 失敗:`, e)
         }
@@ -1406,7 +1476,7 @@ export function useMusicApp() {
       if (songs.length > 0) {
         setRecommendSongs(pickRecommendWindow(songs, category, readRecommendSeed(category)))
         setRecommendCaption(caption)
-        writeRecommendCache(category, songs, caption)
+        writeRecommendCache(category, songs, caption, source)
       } else if (!cached) {
         setRecommendSongs(songs)
         setRecommendCaption(caption)
@@ -1429,6 +1499,26 @@ export function useMusicApp() {
     if (category === recommendCategory && recommendSongs.length > 0) return
     loadRecommend(category)
   }
+
+  /** 切換首頁實際使用的音源；切換後強制重載對應榜單，避免混用快取。 */
+  const switchRecommendSource = (source: RecommendSource) => {
+    const valid = source === 'all' || recommendSources.some(option => option.value === source)
+    const next = valid ? source : 'all'
+    recommendSourceRef.current = next
+    setRecommendSourceState(next)
+    localStorage.setItem(STORAGE_RECOMMEND_SOURCE, next)
+    return loadRecommend(recommendCategory, { force: true })
+  }
+
+  useEffect(() => {
+    // pluginKey=0 是插件初始化前的第一個 render，不能在這裡把已保存的選擇清掉。
+    if (pluginKey === 0 || recommendSource === 'all') return
+    if (!recommendSources.some(option => option.value === recommendSource)) {
+      recommendSourceRef.current = 'all'
+      setRecommendSourceState('all')
+      localStorage.setItem(STORAGE_RECOMMEND_SOURCE, 'all')
+    }
+  }, [pluginKey, recommendSource, recommendSources])
 
   /**
    * 刷新 = 換一批歌，而且是**按下去就換**。
@@ -1489,14 +1579,14 @@ export function useMusicApp() {
     const pad = (n: number) => String(n).padStart(2, '0')
     const when = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
     const lines = [
-      `# WhyMusic ${t('收藏')}`,
+      `# Moumou ${t('收藏')}`,
       '',
       t('匯出時間：{when}', { when }),
       t('共 {n} 首', { n: favorites.length }),
       '',
       ...favorites.map((f, i) => `${i + 1}. ${f.title || t('未知曲目')} — ${f.artist || t('未知歌手')}`),
       '',
-      '<!-- whymusic:favorites:v1',
+      '<!-- moumou:favorites:v1',
       // 欄位縮成單字母：這段是給程式看的，沒必要佔滿檔案
       JSON.stringify(favorites.map(f => ({
         t: f.title, a: f.artist, b: f.album,
@@ -1508,7 +1598,7 @@ export function useMusicApp() {
     ]
     try {
       await exportTextFile(
-        `whymusic-${t('收藏')}-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.md`,
+        `moumou-${t('收藏')}-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}.md`,
         lines.join('\n'),
       )
       showNotification(t('已匯出 {n} 首', { n: favorites.length }), 'success')
@@ -1565,7 +1655,7 @@ export function useMusicApp() {
     }
 
     // ── 路徑 1：本站匯出的檔案 ──
-    const embedded = raw.match(/<!--\s*whymusic:favorites:v1\s*([\s\S]*?)-->/)
+    const embedded = raw.match(/<!--\s*(?:moumou|whymusic):favorites:v1\s*([\s\S]*?)-->/)
     if (embedded) {
       try {
         const parsed = JSON.parse(embedded[1].trim())
@@ -1951,6 +2041,8 @@ export function useMusicApp() {
     pluginUrl,
     recommendCaption,
     recommendCategory,
+    recommendSource,
+    recommendSources,
     refreshRecommend,
     recommendLoading,
     recommendSongs,
@@ -1998,6 +2090,7 @@ export function useMusicApp() {
     setSearchType,
     showNotification,
     switchRecommendCategory,
+    switchRecommendSource,
     togglePlay,
     togglePlugin,
   }

@@ -18,7 +18,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 options: [.allowAirPlay, .allowBluetoothA2DP]
             )
         } catch {
-            NSLog("[WhyMusic] 無法設定背景音訊工作階段：%@", error.localizedDescription)
+            NSLog("[Moumou] 無法設定背景音訊工作階段：%@", error.localizedDescription)
         }
         return true
     }

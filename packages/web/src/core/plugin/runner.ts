@@ -37,6 +37,60 @@ const _console = {
 }
 
 /**
+ * 將常見的 LX Music／MusicFree 音源命名對齊 Moumou 的插件介面。
+ *
+ * 不把任何第三方音源打包進 App；使用者仍需自行提供有權使用的 URL。
+ * 這層只做方法名與回傳形狀的轉換，讓「musicSearch / musicUrl / musicLyric」
+ * 這類來源可以沿用同一個搜尋、播放、歌詞與音質流程。
+ */
+export function adaptPluginDefinition(raw: any): Plugin {
+  if (!raw || typeof raw !== 'object') return raw as Plugin
+  const adapted: any = { ...raw }
+  const call = (fn: any, args: any[]) => fn.apply(raw, args)
+  const search = raw.search || raw.musicSearch || raw.searchMusic
+  const media = raw.getMediaSource || raw.musicUrl || raw.getMusicUrl || raw.getMusicSource
+  const lyric = raw.getLyric || raw.musicLyric || raw.getLyrics || raw.lyric
+  const artwork = raw.getMusicArtwork || raw.musicPic || raw.musicArtwork || raw.getPic
+
+  if (!adapted.name) adapted.name = raw.platform || raw.source || 'LX Music'
+  if (!adapted.platform) adapted.platform = adapted.name
+
+  if (typeof search === 'function' && !raw.search) {
+    adapted.search = async (query: string, page = 1, type: string = 'music') => {
+      const result = await call(search, [query, page, type])
+      if (Array.isArray(result)) return { data: result, isEnd: true }
+      if (!result || typeof result !== 'object') return { data: [], isEnd: true }
+      if (Array.isArray(result.data)) return result
+      for (const key of ['musicList', 'songs', 'results']) {
+        if (Array.isArray(result[key])) return { ...result, data: result[key] }
+      }
+      return result
+    }
+  }
+
+  if (typeof media === 'function' && !raw.getMediaSource) {
+    adapted.getMediaSource = async (item: any, quality?: string) => {
+      const result = await call(media, [item, quality])
+      if (typeof result === 'string') return { url: result }
+      if (result?.url) return result
+      if (typeof result?.data === 'string') return { url: result.data }
+      if (result?.data?.url) return result.data
+      return { url: '' }
+    }
+  }
+
+  if (typeof lyric === 'function' && !raw.getLyric) {
+    adapted.getLyric = async (item: any) => call(lyric, [item])
+  }
+
+  if (typeof artwork === 'function' && !raw.getMusicArtwork) {
+    adapted.getMusicArtwork = async (item: any) => call(artwork, [item])
+  }
+
+  return adapted as Plugin
+}
+
+/**
  * 給插件的 fetch。網頁版就是原生 fetch；App 版多一條救援路徑。
  *
  * 為什麼需要救援：App 版沒有本站後端，插件不能像網頁版那樣打 `/api/proxy`
@@ -110,7 +164,7 @@ export class PluginRunner {
     if (pluginDef && pluginDef.default) {
       pluginDef = pluginDef.default
     }
-    return pluginDef as Plugin
+    return adaptPluginDefinition(pluginDef)
   }
 
   static async loadFromURL(url: string): Promise<Plugin> {

@@ -18,6 +18,11 @@ import { isNative } from './native'
 export type NativeMediaState = {
   title: string
   artist: string
+  album?: string
+  artworkUrl?: string
+  /** 当前歌词行；系统锁屏不支持自定义歌词字段，Live Activity 会显示它。 */
+  lyric?: string
+  lyricIndex?: number
   playing: boolean
   positionSec: number
   durationSec: number
@@ -31,7 +36,7 @@ export type NativeControlEvent = {
 interface BackgroundPlaybackPlugin {
   update(state: NativeMediaState): Promise<void>
   stop(): Promise<void>
-  addListener(event: 'control', cb: (e: NativeControlEvent) => void): Promise<{ remove: () => void }>
+  addListener(event: 'control', cb: (e: NativeControlEvent) => void): Promise<{ remove: () => void | Promise<void> }>
 }
 
 const plugin = isNative()
@@ -49,7 +54,13 @@ export function stopNativeMedia(): void {
 }
 
 /** 訂閱鎖屏／通知欄的控制按鍵 */
-export function onNativeControl(cb: (e: NativeControlEvent) => void): void {
-  plugin?.addListener('control', cb)
-    .catch(e => console.warn('[background] 監聽失敗:', e))
+export async function onNativeControl(cb: (e: NativeControlEvent) => void): Promise<() => void> {
+  if (!plugin) return () => {}
+  try {
+    const handle = await plugin.addListener('control', cb)
+    return () => { void handle.remove() }
+  } catch (e) {
+    console.warn('[background] 監聽失敗:', e)
+    return () => {}
+  }
 }

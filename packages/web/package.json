@@ -1,6 +1,6 @@
 {
   "name": "@whymusic/web",
-  "version": "0.1.0",
+  "version": "1.10.15",
   "type": "module",
   "private": true,
   "scripts": {

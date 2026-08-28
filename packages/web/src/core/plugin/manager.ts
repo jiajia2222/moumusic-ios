@@ -17,6 +17,56 @@ function normalizeItemList(result: any): any[] {
   return []
 }
 
+const firstValue = (...values: any[]): any => values.find(value => value !== undefined && value !== null && value !== '')
+
+/**
+ * 將 LX Music 常見的欄位名轉成 Moumou 的 MusicItem。
+ *
+ * 這裡只補標準欄位，不刪除插件自己的欄位；解析播放位址時仍會拿到完整
+ * 原始物件。這讓 `name/singer/pic/interval` 與 MusicFree 的
+ * `title/artist/artwork/duration` 可以共用同一個播放、歌詞和收藏流程。
+ */
+export function normalizeMusicItem(raw: any): MusicItem {
+  if (!raw || typeof raw !== 'object') {
+    return { id: '', platform: '', title: '', artist: '' }
+  }
+
+  const item: any = { ...raw }
+  const id = firstValue(raw.id, raw.songmid, raw.songId, raw.mid, raw.hash, raw.song_id)
+  const title = firstValue(raw.title, raw.name, raw.songName, raw.songname)
+  const artist = firstValue(raw.artist, raw.artistName, raw.singer, raw.singerName, raw.author)
+  const album = firstValue(raw.album, raw.albumName, raw.albumname)
+  const artwork = firstValue(
+    raw.artwork,
+    raw.cover,
+    raw.pic,
+    raw.picUrl,
+    raw.pic_url,
+    raw.albumPic,
+    raw.album_pic,
+  )
+  const url = firstValue(raw.url, raw.playUrl, raw.play_url, raw.audioUrl, raw.audio_url)
+  const durationValue = firstValue(raw.duration, raw.interval, raw.durationSec, raw.time)
+
+  item.id = id === undefined ? '' : String(id)
+  item.title = title === undefined ? '' : String(title)
+  item.artist = artist === undefined ? '' : String(artist)
+  if (album !== undefined) item.album = String(album)
+  if (typeof artwork === 'string') item.artwork = artwork
+  if (typeof url === 'string') item.url = url
+
+  if (typeof durationValue === 'number' && Number.isFinite(durationValue)) {
+    item.duration = durationValue > 10000 ? durationValue / 1000 : durationValue
+  } else if (typeof durationValue === 'string') {
+    const clock = durationValue.trim().match(/^(\d+):([0-5]?\d)(?:\.(\d+))?$/)
+    if (clock) {
+      item.duration = Number(clock[1]) * 60 + Number(clock[2]) + Number(`0.${clock[3] || 0}`)
+    }
+  }
+
+  return item as MusicItem
+}
+
 /**
  * 插件管理器
  */
@@ -185,11 +235,12 @@ export class PluginManager {
    * source 是子源（netease/kuwo…），插件自己回報的要保留，只補缺。
    */
   private tagItems(items: any[], pluginName: string): MusicItem[] {
-    items.forEach((item: any) => {
+    return items.map((raw: any) => {
+      const item = normalizeMusicItem(raw) as any
       item.platform = pluginName
       if (!item.source) item.source = pluginName
+      return item
     })
-    return items as MusicItem[]
   }
 
   /**

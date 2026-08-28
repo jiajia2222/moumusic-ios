@@ -93,6 +93,8 @@ export interface Plugin {
   getMusicInfo?(item: MusicItem): Promise<any>
   /** 獲取歌詞 */
   getLyric?(item: MusicItem): Promise<any>
+  /** 獲取封面（LX Music 常見別名：musicPic / musicArtwork） */
+  getMusicArtwork?(item: MusicItem): Promise<any>
   /** 獲取專輯信息 */
   getAlbumInfo?(item: any, page?: number): Promise<any>
   /** 獲取歌手信息 */
