@@ -1,12 +1,21 @@
-# WhyMusic
+# Moumou
 
-用瀏覽器聽歌。搜尋、播放、收藏、下載，不用裝 App。
+Moumou 是由 moumou 打造的輕量音樂播放器：搜尋、播放、收藏、歌詞與下載，
+可以直接在瀏覽器或 iOS App 中使用，不需要登入帳號。
 
-部署步驟 → [DEPLOY.md](DEPLOY.md) ｜ 現成的部署包 → [Releases](../../releases)
+Moumou is a lightweight music player built by moumou. Search, play, save favourites,
+read lyrics and download tracks from the browser or iOS app — no account required.
 
-## 這是什麼
+> 品牌名稱：Moumou ｜ Brand: Moumou
 
-一個跑在瀏覽器裡的音樂播放器。播放器與音源徹底分開：前端不認識任何音源，只透過
+支援語言 / Languages: 繁體中文、简体中文、English、日本語、한국어、Русский、
+Español、Português。應用會依系統語言自動選擇，也可以在「設置 / Settings」中手動切換。
+
+部署步驟 / Deployment → [DEPLOY.md](DEPLOY.md) ｜ 發布版本 / Releases → [Releases](../../releases)
+
+## 這是什麼 / What is Moumou
+
+Moumou 是一個跑在瀏覽器裡的音樂播放器。播放器與音源徹底分開：前端不認識任何音源，只透過
 一層插件介面問「給我一個可播的 URL」，音源自己去處理搜尋、扇出、救援、簽名。
 
 **app 出廠不帶任何音源** —— 開啟後要到「設置」頁貼上網址安裝，才能搜尋與播放。
@@ -199,7 +208,7 @@ IPA 建置必須在 macOS 26 + Xcode 26（或更新版本）執行，並刻意�
 ```bash
 pnpm install
 pnpm build:ipa
-# → ios/build/unsigned/WhyMusic-unsigned.ipa
+# → ios/build/unsigned/Moumou-unsigned.ipa
 ```
 
 這個 IPA 只能作為檢查、CI 產物或後續簽名的輸入，不能直接安裝到 iPhone。要在真機
