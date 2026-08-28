@@ -66,7 +66,9 @@ for (const dir of ['sources', 'plugins']) {
 run(pnpm, ['exec', 'cap', 'sync', 'ios'])
 
 // 3) Build an arm64 device app with every signing switch disabled. Capacitor
-// 8.5 exposes its Swift APIs through Swift 6's non-escaping types feature.
+// 8.5 gates its Swift APIs behind the NonescapableTypes compiler feature. Keep
+// Swift 5 language compatibility for older third-party sources while enabling
+// that feature explicitly.
 fs.rmSync(DERIVED_DATA, { recursive: true, force: true })
 fs.rmSync(OUTPUT_DIR, { recursive: true, force: true })
 run('xcodebuild', [
@@ -76,7 +78,8 @@ run('xcodebuild', [
   '-sdk', 'iphoneos',
   '-destination', 'generic/platform=iOS',
   '-derivedDataPath', DERIVED_DATA,
-  'SWIFT_VERSION=6.0',
+  'SWIFT_VERSION=5.0',
+  'OTHER_SWIFT_FLAGS=-enable-experimental-feature NonescapableTypes',
   'CODE_SIGNING_ALLOWED=NO',
   'CODE_SIGNING_REQUIRED=NO',
   'CODE_SIGN_IDENTITY=',

@@ -40,7 +40,8 @@ test('release workflow builds on macOS and uploads the unsigned IPA', () => {
   assert.match(workflow, /ios\/build\/unsigned\/WhyMusic-unsigned\.ipa/)
 
   const buildScript = fs.readFileSync(path.join(ROOT, 'scripts', 'build-ipa.mjs'), 'utf8')
-  assert.match(buildScript, /SWIFT_VERSION=6\.0/)
+  assert.match(buildScript, /SWIFT_VERSION=5\.0/)
+  assert.match(buildScript, /NonescapableTypes/)
 })
 
 test('Capacitor Share is patched for the Capacitor 8.5 Swift API', () => {
