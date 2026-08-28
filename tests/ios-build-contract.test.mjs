@@ -27,3 +27,14 @@ test('generated iOS web assets stay out of version control', () => {
   assert.match(gitignore, /ios\/App\/App\/public\//)
   assert.match(gitignore, /ios\/App\/App\/capacitor\.config\.json/)
 })
+
+test('release workflow builds on macOS and uploads the unsigned IPA', () => {
+  const workflowPath = path.join(ROOT, '.github', 'workflows', 'ios-release.yml')
+  assert.ok(fs.existsSync(workflowPath), 'iOS release workflow must exist')
+  const workflow = fs.readFileSync(workflowPath, 'utf8')
+
+  assert.match(workflow, /runs-on:\s*macos-/)
+  assert.match(workflow, /pnpm build:ipa/)
+  assert.match(workflow, /gh release create/)
+  assert.match(workflow, /ios\/build\/unsigned\/WhyMusic-unsigned\.ipa/)
+})
