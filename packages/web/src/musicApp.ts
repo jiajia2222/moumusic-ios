@@ -571,7 +571,14 @@ export function useMusicApp() {
   // 推薦頁：分類（粵語／中文／Kpop／歐美）× 排序（最新／熱門）。
   // 分類記在 localStorage：常聽粵語的人不該每次開 app 都要再點一次
   // 宣告在音質設定之前：setQuality 換音質時要作廢已預取的位址（詳見下方註解）
-  const prefetchRef = useRef<{ key: string; url: string; source?: string; index: number } | null>(null)
+  const prefetchRef = useRef<{
+    key: string
+    url: string
+    headers?: Record<string, string>
+    userAgent?: string
+    source?: string
+    index: number
+  } | null>(null)
 
   /** 音質偏好。播放與下載共用，記在 localStorage */
   const [quality, setQualityState] = useState<Quality>(() => {
@@ -662,6 +669,11 @@ export function useMusicApp() {
    * albumDetail 上的 musicList 可能是空的。
    */
   const queueRef = useRef<PlayQueue>({ list: [], index: -1, order: 'sequential' })
+  // UI 需要一份可觀察的快照來呈現完整「正在播放」頁；ref 仍然保留給 ended
+  // handler 讀最新值，兩者各自服務不同生命週期，不互相取代。
+  const [queueState, setQueueState] = useState<PlayQueue>({
+    list: [], index: -1, order: 'sequential',
+  })
   /**
    * 預取好的下一首播放位址。換歌時若命中就省掉一次網路解析 ——
    * 手機在背景時網路請求最容易失敗，少一步就少一個中斷點。
@@ -1075,7 +1087,10 @@ export function useMusicApp() {
           const media = await pluginManager.getMediaSource(plugin, item, quality)
           if (!media?.url) throw new Error(t('音源沒有回傳可下載的 URL'))
           // 原生模式直抓（沒有後端可代抓，WebView 也允許跨域）
-          const response = await fetch(viaProxy(media.url))
+          const response = await pluginFetch(
+            viaProxy(media.url, 'GET', media.headers),
+            { __moumusicBinary: true } as RequestInit,
+          )
           if (!response.ok) {
             const msg = `HTTP ${response.status}`
             if (attempt < attempts.length) {
@@ -1190,11 +1205,14 @@ export function useMusicApp() {
       if (!plugin) return
       const media = await pluginManager.getMediaSource(plugin, next, qualityRef.current)
       if (media?.url) {
-        prefetchRef.current = { key, url: media.url, source: media.source, index: nextIdx }
+        prefetchRef.current = {
+          key, url: media.url, headers: media.headers, userAgent: media.userAgent,
+          source: media.source, index: nextIdx,
+        }
         // 光是拿到 URL 還不夠 —— 還要把它載進播放器閒置的那個 audio 元素。
         // 鎖屏換歌時只對已載好的元素呼叫 play()，不動 src 也不碰網路，
         // 這是 iOS 背景續播唯一穩的做法（詳見 player.ts 開頭）
-        player.preload(media.url)
+        player.preload(media.url, { headers: media.headers, userAgent: media.userAgent })
       }
     } catch {
       // 預取失敗不是問題，換歌時會正常走一次解析
@@ -1225,7 +1243,10 @@ export function useMusicApp() {
 
     const prevQueue = queueRef.current
     const prevItem = playingItemRef.current
-    if (queue) queueRef.current = queue
+    if (queue) {
+      queueRef.current = queue
+      setQueueState(queue)
+    }
     const auto = opts?.auto ?? false
     const skip = opts?.skip ?? new Set<number>()
     const exclude = opts?.exclude ?? []
@@ -1257,7 +1278,10 @@ export function useMusicApp() {
         ? prefetchRef.current
         : null
       const media = prefetched
-        ? { url: prefetched.url, source: prefetched.source }
+        ? {
+            url: prefetched.url, source: prefetched.source,
+            headers: prefetched.headers, userAgent: prefetched.userAgent,
+          }
         : await pluginManager.getMediaSource(
             plugin,
             exclude.length > 0 ? { ...item, _exclude: exclude } : item,
@@ -1270,7 +1294,7 @@ export function useMusicApp() {
       // 播放前就把 metadata 設好 —— Android 是在取得 audio focus 的那一刻讀它，
       // 等 React effect 跑就太晚了（詳見 applyMediaMetadata）
       applyMediaMetadata(item)
-      await player.play(media.url)
+      await player.play(media.url, { headers: media.headers, userAgent: media.userAgent })
       setIsPlaying(true)
       // 開始播了才預取下一首 —— 播放本身優先，預取只是背景準備
       void prefetchNext()
@@ -2050,6 +2074,7 @@ export function useMusicApp() {
     playMode,
     quality,
     playingItem,
+    queueState,
     pluginError,
     pluginKey,
     pluginName,

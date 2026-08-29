@@ -59,13 +59,29 @@ export function isIOSNative(): boolean {
  * 把跨域資源包成經由本站後端代抓的 URL。原生模式下不包 —— 沒有後端，
  * 而且 WebView 允許直連。同源路徑也不包（代理只吃絕對 URL）。
  */
-export function viaProxy(url: string, method = 'GET'): string {
+export function viaProxy(
+  url: string,
+  method = 'GET',
+  headers?: Record<string, string>,
+): string {
   if (isNative()) return url
   const sameOrigin = url.startsWith('/')
     || (typeof window !== 'undefined' && url.startsWith(window.location.origin))
-  return sameOrigin
-    ? url
-    : `/api/proxy?url=${encodeURIComponent(url)}&method=${encodeURIComponent(method.toUpperCase())}`
+  if (sameOrigin) return url
+
+  // HTMLAudioElement 不能由 JavaScript 自訂 Referer/User-Agent。把音源插件
+  // 回報的這兩個安全必要標頭交給同源代理轉發，否則部分 LX 音源解析成功後
+  // 仍會在真正載入音訊時回 403。只允許這兩個播放常用標頭，不把任意 headers
+  // 暴露成 URL 參數。
+  const params = new URLSearchParams({
+    url,
+    method: method.toUpperCase(),
+  })
+  const referer = headers?.Referer || headers?.referer
+  const userAgent = headers?.['User-Agent'] || headers?.['user-agent']
+  if (referer) params.set('referer', referer)
+  if (userAgent) params.set('userAgent', userAgent)
+  return `/api/proxy?${params.toString()}`
 }
 
 import { registerPlugin } from '@capacitor/core'

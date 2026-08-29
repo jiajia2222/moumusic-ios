@@ -62,3 +62,11 @@ test('iOS declares Live Activities and embeds the Dynamic Island widget target',
   assert.match(project, /com\.apple\.product-type\.app-extension/)
   assert.match(project, /PlugIns/)
 })
+
+test('iOS allows user-supplied audio hosts and does not force CORS mode on native audio', () => {
+  const info = read('ios/App/App/Info.plist')
+  const player = read('packages/web/src/core/player/player.ts')
+  assert.match(info, /NSAppTransportSecurity/)
+  assert.match(info, /NSAllowsArbitraryLoads/)
+  assert.match(player, /if \(!isNative\(\)\) el\.crossOrigin = 'anonymous'/)
+})

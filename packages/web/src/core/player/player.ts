@@ -10,7 +10,12 @@
  *   元素呼叫 play()，完全不動 src、不需要網路 —— 這是背景續播唯一穩的做法。
  *
  */
-import { viaProxy } from '../native'
+import { isNative, viaProxy } from '../native'
+
+export type AudioSourceOptions = {
+  headers?: Record<string, string>
+  userAgent?: string
+}
 
 /**
  * 0.05 秒的靜音 WAV（8kHz/8-bit/單聲道，自己產的，不依賴任何外部資源）。
@@ -48,7 +53,10 @@ export class Player {
 
   private createElement(): HTMLAudioElement {
     const el = new Audio()
-    el.crossOrigin = 'anonymous'
+    // Web playback needs CORS because it goes through /api/proxy. Native WebViews
+    // play user-supplied hosts directly; forcing anonymous CORS there rejects many
+    // otherwise valid audio CDNs that do not expose browser CORS headers.
+    if (!isNative()) el.crossOrigin = 'anonymous'
     // iOS Safari：沒有 playsInline 會嘗試接管成全螢幕播放器，背景播放也更容易被中斷。
     // TS 的 HTMLAudioElement 型別沒有這個屬性（規格上屬 HTMLVideoElement），
     // 但 iOS 的 audio 元素確實會讀它，所以在執行時設。
@@ -125,21 +133,25 @@ export class Player {
    * 原生 App 裡也不包 —— 那邊沒有後端，WebView 直接允許 cleartext。
    * 判斷邏輯集中在 core/native.ts，兩處行為才不會走鐘。
    */
-  private resolveSrc(url: string): string {
-    return viaProxy(url)
+  private resolveSrc(url: string, options?: AudioSourceOptions): string {
+    const headers = { ...(options?.headers || {}) }
+    if (options?.userAgent && !headers['User-Agent'] && !headers['user-agent']) {
+      headers['User-Agent'] = options.userAgent
+    }
+    return viaProxy(url, 'GET', headers)
   }
 
   /**
    * 把下一首載進閒置元素。前台呼叫（配合 app 的預取），這樣鎖屏換歌時
    * 不需要任何網路動作，也不必動 src。
    */
-  preload(url: string): void {
+  preload(url: string, options?: AudioSourceOptions): void {
     if (!url) return
     if (this.preloaded?.url === url) return
     const el = this.idleEl
     // 閒置元素不該帶著循環旗標，否則輪替過去之後行為會不一致
     el.loop = false
-    el.src = this.resolveSrc(url)
+    el.src = this.resolveSrc(url, options)
     el.load()
     this.preloaded = { url, el }
   }
@@ -157,7 +169,7 @@ export class Player {
   }
 
   /** 播放指定 URL */
-  async play(url: string): Promise<void> {
+  async play(url: string, options?: AudioSourceOptions): Promise<void> {
     // 這首正是預載好的那一首 → 走輪替，這是背景續播唯一穩的路徑
     const ready = this.preloaded
     if (ready && ready.url === url && ready.el !== this.audio) {
@@ -166,7 +178,7 @@ export class Player {
     // 換了別的歌（使用者手動點選、或換子源重試），預載的那份就作廢了
     this.preloaded = null
 
-    const source = this.resolveSrc(url)
+    const source = this.resolveSrc(url, options)
     // Some iOS WebViews retain the previous element time when a failed source
     // is replaced. Reset explicitly before asking AVPlayer/HTMLMediaElement to
     // start; otherwise a retry may appear to play while remaining at EOF.

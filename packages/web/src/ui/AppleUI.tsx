@@ -10,6 +10,7 @@ import { MusicItem } from './../core'
 import { formatSize } from './../core/downloads'
 import {
   MusicApp,
+  PlayQueue,
   pluginManager,
   APP_VERSION,
   PLAY_MODE_ICON,
@@ -69,7 +70,7 @@ function TabIconSliders() {
 }
 
 /**
- * 歌詞面板：從底部升起的全螢幕頁（點播放條打開）。
+ * 正在播放頁：從底部升起的全螢幕頁（點播放條打開）。
  *
  * 為什麼是全螢幕而不是小彈窗：歌詞要看得下去就得有篇幅 —— 小視窗只放得下三四行，
  * 高亮那行永遠貼著邊，前後文都看不到。全螢幕還能順便把封面放大，變成一個
@@ -78,9 +79,9 @@ function TabIconSliders() {
  * 自動捲動只在使用者沒有自己動的時候做：手動捲之後三秒內不搶回控制權，
  * 否則想往下看後面的詞會被一直拉回當前行 —— 那是很惱人的體驗。
  */
-function LyricsSheet({
+function NowPlayingSheet({
   open, onClose, item, lines, loading, index, onSeek, onCopy, formatTime, currentTime, duration,
-  isPlaying, onTogglePlay, onPrev, onNext,
+  isPlaying, onTogglePlay, onPrev, onNext, queue, favorite, onToggleFavorite, onPlayItem, quality,
 }: {
   open: boolean
   onClose: () => void
@@ -97,14 +98,27 @@ function LyricsSheet({
   onTogglePlay: () => void
   onPrev: () => void
   onNext: () => void
+  queue: PlayQueue
+  favorite: boolean
+  onToggleFavorite: () => void
+  onPlayItem: (item: MusicItem, index: number) => void
+  quality: string
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<HTMLParagraphElement>(null)
+  const [section, setSection] = useState<'lyrics' | 'queue'>('lyrics')
+  const queueItems = queue.list
+  const qualityLabel = quality === '740' ? 'FLAC' : quality === '999' ? 'Hi-Res' : `${quality} kbps`
   /** 使用者最後一次手動捲動的時間。三秒內不自動捲 */
   const manualAtRef = useRef(0)
 
   useEffect(() => {
     if (!open) return
+    setSection('lyrics')
+  }, [open, item?.id])
+
+  useEffect(() => {
+    if (!open || section !== 'lyrics') return
     if (Date.now() - manualAtRef.current < 3000) return
     // 前奏期間（還沒唱到第一句）沒有「當前行」可置中。捲到頂讓開頭幾句看得見 ——
     // 不做的話會停在上方的留白裡，看起來像沒抓到歌詞。
@@ -113,12 +127,12 @@ function LyricsSheet({
       return
     }
     activeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [open, index])
+  }, [open, index, section])
 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#0d0e11] flex flex-col relative overflow-hidden"
+    <div className="fixed inset-0 z-[60] wm-now-playing bg-[#0d0e11] flex flex-col relative overflow-hidden"
       style={{
         paddingTop: 'max(env(safe-area-inset-top, 0px), var(--wm-inset-top, 0px))',
         paddingBottom: 'max(env(safe-area-inset-bottom, 0px), var(--wm-inset-bottom, 0px))',
@@ -127,8 +141,10 @@ function LyricsSheet({
         <div className="absolute inset-[-12%] bg-cover bg-center blur-3xl scale-110 opacity-25"
           aria-hidden="true" style={{ backgroundImage: `url(${item.artwork})` }} />
       )}
+      <div className="wm-liquid-orb -top-24 -left-24" aria-hidden="true" />
+      <div className="wm-liquid-orb blue top-1/3 -right-28" aria-hidden="true" />
       <div className="absolute inset-0 bg-[#0d0e11]/80" aria-hidden="true" />
-      {/* 標題列：關閉在左（iOS 的向下箭頭＝收起），複製在右 */}
+      {/* 標題列：這裡是完整的「歌曲頁」，不是只有歌詞彈窗 */}
       <div className="relative z-10 flex-shrink-0 flex items-center gap-2 px-3 h-12">
         <button onClick={onClose} aria-label={t('返回')}
           className="w-9 h-9 rounded-full flex items-center justify-center
@@ -139,8 +155,7 @@ function LyricsSheet({
           </svg>
         </button>
         <div className="flex-1 min-w-0 text-center">
-          <div className="text-[13px] font-medium truncate">{item?.title || ''}</div>
-          <div className="text-[11px] text-white/45 truncate">{item?.artist || ''}</div>
+          <div className="text-[11px] uppercase tracking-[0.22em] text-white/45">{t('正在播放')}</div>
         </div>
         <button onClick={onCopy} disabled={lines.length === 0}
           title={t('複製歌詞')} aria-label={t('複製歌詞')}
@@ -160,9 +175,9 @@ function LyricsSheet({
         暫停時停在當下角度（見 index.css 的 is-paused）。
         尺寸用 vh 而不是固定 px：小螢幕上不能把歌詞擠掉。
       */}
-      <div className="relative z-10 flex-shrink-0 flex justify-center pt-1 pb-3">
-        <div className={`disc-spin ${isPlaying ? '' : 'is-paused'}
-                        w-[18vh] h-[18vh] max-w-[140px] max-h-[140px] rounded-full
+      <div className="relative z-10 flex-shrink-0 flex justify-center pt-1 pb-3 px-8">
+        <div className={`disc-spin ${isPlaying ? '' : 'is-paused'} wm-glass wm-glass-highlight
+                        w-[min(62vw,260px)] h-[min(62vw,260px)] max-h-[31vh] max-w-[31vh] rounded-[30px]
                         overflow-hidden bg-white/[0.07] ring-1 ring-white/10
                         flex items-center justify-center`}>
           {item?.artwork
@@ -171,7 +186,48 @@ function LyricsSheet({
         </div>
       </div>
 
-      {/* 歌詞本體 */}
+      <div className="relative z-10 flex-shrink-0 px-6 text-center">
+        <h1 className="text-[24px] font-semibold tracking-tight truncate">{item?.title || t('未知曲目')}</h1>
+        <p className="mt-1 text-[15px] text-white/55 truncate">
+          {item?.artist || t('未知歌手')}{item?.album ? ` · ${item.album}` : ''}
+        </p>
+        <div className="mt-2 flex items-center justify-center gap-2 text-[11px] text-white/40">
+          <span className="rounded-full bg-white/10 px-2.5 py-1">{item?.platform || t('音源')}</span>
+          <span className="rounded-full bg-[#ec4949]/15 px-2.5 py-1 text-[#ff8585]">{qualityLabel}</span>
+        </div>
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <button onClick={onToggleFavorite} aria-pressed={favorite}
+            className={`wm-glass-subtle min-h-11 rounded-full px-4 flex items-center gap-2 text-[13px]
+                        active:scale-95 transition-transform ${favorite ? 'text-[#ff7777]' : 'text-white/70'}`}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill={favorite ? 'currentColor' : 'none'}
+              stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <path d="M8 13.5S2 10 2 6.2A3.2 3.2 0 0 1 8 4.6a3.2 3.2 0 0 1 6 1.6c0 3.8-6 7.3-6 7.3z" />
+            </svg>
+            {favorite ? t('已收藏') : t('收藏')}
+          </button>
+          <button onClick={() => setSection('queue')}
+            className="wm-glass-subtle min-h-11 rounded-full px-4 flex items-center gap-2 text-[13px]
+                       text-white/70 active:scale-95 transition-transform">
+            <span className="text-[16px]" aria-hidden="true">☷</span>
+            {t('播放队列')} {queueItems.length > 0 ? `· ${queueItems.length}` : ''}
+          </button>
+        </div>
+      </div>
+
+      <div className="relative z-10 flex-shrink-0 px-6 pt-5">
+        <div className="wm-glass-subtle grid grid-cols-2 rounded-[14px] p-1 gap-1">
+          <button onClick={() => setSection('lyrics')} aria-pressed={section === 'lyrics'}
+            className={`min-h-10 rounded-[10px] text-[14px] transition ${section === 'lyrics' ? 'bg-white/15 text-white' : 'text-white/45'}`}>
+            {t('歌词')}
+          </button>
+          <button onClick={() => setSection('queue')} aria-pressed={section === 'queue'}
+            className={`min-h-10 rounded-[10px] text-[14px] transition ${section === 'queue' ? 'bg-white/15 text-white' : 'text-white/45'}`}>
+            {t('播放队列')} {queueItems.length > 0 ? `(${queueItems.length})` : ''}
+          </button>
+        </div>
+      </div>
+
+      {/* 歌詞／播放队列本体 */}
       <div ref={scrollRef}
         onPointerDown={() => { manualAtRef.current = Date.now() }}
         onWheel={() => { manualAtRef.current = Date.now() }}
@@ -181,38 +237,67 @@ function LyricsSheet({
           block:'center' 需要兩側有空間）。取 26vh 而不是半個畫面高：唱片與
           控制列已經吃掉上下各兩成，留白過多會讓前奏期間看起來一片空白。
         */}
-        <div className="max-w-xl mx-auto py-[26vh]">
-          {loading && (
-            <p className="text-center text-[15px] text-white/35">{t('載入歌詞…')}</p>
-          )}
-          {!loading && lines.length === 0 && (
-            <p className="text-center text-[15px] text-white/35">{t('這首歌沒有歌詞。')}</p>
-          )}
-          {lines.map((l, i) => (
-            <p
-              key={`${l.time}-${i}`}
-              ref={i === index ? activeRef : undefined}
-              onClick={() => onSeek(l.time)}
-              className={`py-2.5 text-center leading-snug cursor-pointer transition-all duration-300 ${
-                i === index
-                  ? 'text-[22px] font-semibold text-white'
-                  : 'text-[18px] text-white/30 active:text-white/60'
-              }`}
-            >
-              <span className="block">{l.text}</span>
-              {l.translation && (
-                <span className={`block mt-1 text-[13px] font-normal ${i === index ? 'text-white/60' : 'text-white/20'}`}>
-                  {l.translation}
-                </span>
-              )}
-              {!l.translation && l.romaji && (
-                <span className={`block mt-1 text-[13px] font-normal ${i === index ? 'text-white/50' : 'text-white/20'}`}>
-                  {l.romaji}
-                </span>
-              )}
-            </p>
-          ))}
-        </div>
+        {section === 'lyrics' ? (
+          <div className="max-w-xl mx-auto py-[18vh]">
+            {loading && (
+              <p className="text-center text-[15px] text-white/35">{t('載入歌詞…')}</p>
+            )}
+            {!loading && lines.length === 0 && (
+              <p className="text-center text-[15px] text-white/35">{t('這首歌沒有歌詞。')}</p>
+            )}
+            {lines.map((l, i) => (
+              <p
+                key={`${l.time}-${i}`}
+                ref={i === index ? activeRef : undefined}
+                onClick={() => onSeek(l.time)}
+                className={`py-2.5 text-center leading-snug cursor-pointer transition-all duration-300 ${
+                  i === index
+                    ? 'text-[22px] font-semibold text-white'
+                    : 'text-[18px] text-white/30 active:text-white/60'
+                }`}
+              >
+                <span className="block">{l.text}</span>
+                {l.translation && (
+                  <span className={`block mt-1 text-[13px] font-normal ${i === index ? 'text-white/60' : 'text-white/20'}`}>
+                    {l.translation}
+                  </span>
+                )}
+                {!l.translation && l.romaji && (
+                  <span className={`block mt-1 text-[13px] font-normal ${i === index ? 'text-white/50' : 'text-white/20'}`}>
+                    {l.romaji}
+                  </span>
+                )}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <div className="max-w-xl mx-auto py-5 space-y-2">
+            <div className="flex items-center justify-between px-1 pb-2 text-[12px] text-white/40">
+              <span>{t('播放队列')}</span>
+              <span>{queue.order === 'shuffle' ? t('随机') : t('顺序')}</span>
+            </div>
+            {queueItems.length === 0 && (
+              <p className="py-12 text-center text-[15px] text-white/35">{t('播放队列为空。')}</p>
+            )}
+            {queueItems.map((queueItem, queueIndex) => (
+              <button key={`${queueItem.platform}-${queueItem.id}-${queueIndex}`}
+                onClick={() => onPlayItem(queueItem, queueIndex)}
+                className={`wm-glass-subtle w-full min-h-[60px] rounded-[16px] px-3 flex items-center gap-3 text-left
+                            active:scale-[0.99] transition-transform ${queueIndex === queue.index ? 'ring-1 ring-[#ec4949]/70' : ''}`}>
+                <div className="w-10 h-10 rounded-[10px] overflow-hidden bg-white/10 flex-shrink-0 flex items-center justify-center">
+                  {queueItem.artwork ? <img src={queueItem.artwork} alt="" className="w-full h-full object-cover" /> : <span className="text-white/35">♪</span>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className={`truncate text-[14px] ${queueIndex === queue.index ? 'text-[#ff7777] font-medium' : 'text-white'}`}>
+                    {queueItem.title || t('未知曲目')}
+                  </div>
+                  <div className="mt-0.5 truncate text-[12px] text-white/40">{queueItem.artist || t('未知歌手')}</div>
+                </div>
+                {queueIndex === queue.index && <span className="text-[12px] text-[#ff7777]">{isPlaying ? '♫' : 'Ⅱ'}</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 進度與控制。歌詞頁不該逼使用者收起面板才能換歌 */}
@@ -460,7 +545,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
     pluginError, pluginKey, pluginName, pluginToggles, pluginUrl, recommendCategory,
     recommendLoading, recommendSongs, recommendUnsupported, recommendSource,
     recommendSources, removePlugin,
-    results, search,
+    results, search, queueState,
     quality, recentSongs, showcaseSongs, recommendCaption, refreshRecommend, removeDownload, searchType, seekTo,
     serverVersion,
     setCurrentView, setQuality, setKeyword, setLockedItem, setPluginName, setPluginUrl,
@@ -536,7 +621,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
 
   return (
     <div
-      className="wm-shell flex flex-col"
+      className="wm-shell relative flex flex-col"
       style={{
         // 用 index.html 定義的 --app-height（dvh，手機才會真正滿版）
         height: 'var(--app-height, 100vh)',
@@ -544,9 +629,11 @@ export default function AppleUI({ app }: { app: MusicApp }) {
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang TC", "Microsoft JhengHei", sans-serif',
       }}
     >
+      <div className="wm-liquid-orb z-0 -top-36 -right-24" aria-hidden="true" />
+      <div className="wm-liquid-orb blue z-0 top-[42%] -left-36" aria-hidden="true" />
       {/* 頂部標題列。毛玻璃 + 安全區內距，內容捲動時仍可見 */}
       <header
-        className="flex-shrink-0 border-b border-white/[0.08] bg-black/70 backdrop-blur-xl"
+        className="wm-glass-subtle relative z-10 flex-shrink-0 border-b border-white/[0.08]"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), var(--wm-inset-top, 0px))' }}
       >
         {/* logo 與站名放大 1.5 倍（22→33px、16→24px），列高跟著加大才不會被裁掉 */}
@@ -605,7 +692,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
       )}
 
       {/* 內容區 */}
-      <div className="flex-1 overflow-y-auto overscroll-contain">
+      <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-2xl mx-auto pb-4">
 
           {/* ── 推薦 ── */}
@@ -650,7 +737,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
               )}
               {/* 首頁只顯示當前音源狀態；切換入口統一放在設置頁。 */}
               <div className="px-4 pt-4">
-                <div className="wm-hero flex items-center justify-between gap-3 rounded-[16px] px-4 py-3.5">
+                  <div className="wm-hero wm-glass flex items-center justify-between gap-3 rounded-[16px] px-4 py-3.5">
                   <div className="min-w-0">
                     <div className="text-[13px] font-medium text-white/45 uppercase tracking-wide">
                       {t('音源')}
@@ -721,7 +808,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                   ? t('推薦需要音源，請到「設置」頁安裝。')
                   : t('尚無推薦曲目。')} />
               )}
-              <div className="divide-y divide-white/[0.06]">
+              <div className="wm-glass-subtle rounded-[18px] overflow-hidden divide-y divide-white/[0.06]">
                 {recommendSongs.map(item => (
                   <Row
                     key={`${item.platform}-${item.id}`}
@@ -750,7 +837,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
               {favorites.length === 0 && (
                 <EmptyState text={t('還沒有收藏。點曲目右邊的心心加進來，或到「設置」頁匯入歌單。')} />
               )}
-              <div className="divide-y divide-white/[0.06]">
+              <div className="wm-glass-subtle rounded-[18px] overflow-hidden divide-y divide-white/[0.06]">
                 {favorites.map(item => (
                   <Row
                     key={`${item.platform}-${item.id}`}
@@ -784,7 +871,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                       onChange={e => setKeyword(e.currentTarget.value)}
                       onKeyDown={handleSearchSubmit}
                       placeholder={t('歌曲、歌手或專輯')}
-                      className="w-full pl-9 pr-3 py-2.5 bg-white/10 rounded-[12px] text-[16px]
+                      className="wm-glass-subtle w-full pl-9 pr-3 py-2.5 rounded-[12px] text-[16px]
                                  placeholder:text-white/35 outline-none focus:bg-white/[0.14] transition"
                     />
                   </div>
@@ -812,7 +899,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                   ? t('搜尋需要音源，請到「設置」頁安裝。')
                   : keyword.trim() ? t('找不到符合的結果。') : t('輸入關鍵字開始搜尋。')} />
               )}
-              <div className="divide-y divide-white/[0.06]">
+              <div className="wm-glass-subtle rounded-[18px] overflow-hidden divide-y divide-white/[0.06]">
                 {results.map(item => (
                   <Row
                     key={`${item.platform}-${item.id}`}
@@ -869,7 +956,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
               </div>
               {albumLoading && <EmptyState text={t('載入中…')} />}
               {!albumLoading && albumTracks.length === 0 && <EmptyState text={t('此專輯沒有曲目。')} />}
-              <div className="divide-y divide-white/[0.06]">
+              <div className="wm-glass-subtle rounded-[18px] overflow-hidden divide-y divide-white/[0.06]">
                 {albumTracks.map((track, idx) => (
                   <Row
                     key={`${track.id}-${idx}`}
@@ -1378,8 +1465,8 @@ export default function AppleUI({ app }: { app: MusicApp }) {
         </div>
       </div>
 
-      {/* 歌詞（全螢幕，點播放條的曲目資訊打開） */}
-      <LyricsSheet
+      {/* 正在播放頁（歌曲详情、歌词与播放队列） */}
+      <NowPlayingSheet
         open={showLyrics}
         onClose={() => setShowLyrics(false)}
         item={playingItem}
@@ -1395,6 +1482,13 @@ export default function AppleUI({ app }: { app: MusicApp }) {
         onTogglePlay={togglePlay}
         onPrev={playPrev}
         onNext={playNext}
+        queue={queueState}
+        quality={quality}
+        favorite={playingItem ? isFavorite(playingItem) : false}
+        onToggleFavorite={() => { if (playingItem) toggleFavorite(playingItem) }}
+        onPlayItem={(item, index) => {
+          void play(item, { ...queueState, index }, { auto: false })
+        }}
       />
 
       {/*
@@ -1409,7 +1503,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
             少了它只是一塊灰色半透明方塊
         底部安全區的邊距加在外層 padding 上，卡片就會浮在導航列上方而不是被它壓住。
       */}
-      <div className="flex-shrink-0">
+      <div className="relative z-10 flex-shrink-0">
         {/* 浮起來的留白。只有卡片本身接收點擊，卡片外的空白讓下面的清單收得到 */}
         <div className="pointer-events-none px-3 pb-2">
         <div
@@ -1517,7 +1611,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
           分頁列留在最底、貼著邊 —— 它是導覽，位置固定才好用拇指盲按；
           浮起來的是播放器。底部安全區的邊距加在這裡（見 v1.10.7 的註解）。
         */}
-        <div className="flex border-t border-white/[0.08] bg-black/40 backdrop-blur-xl"
+        <div className="wm-tabbar flex border-t border-white/[0.08]"
           style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), var(--wm-inset-bottom, 0px))' }}>
           {tabs.map(tab => (
             <button key={tab.key}

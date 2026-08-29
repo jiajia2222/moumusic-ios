@@ -292,7 +292,7 @@ export class PluginManager {
   async getMediaSource(
     plugin: Plugin, item: MusicItem, quality?: string,
   ): Promise<{
-    url: string; headers?: Record<string, string>; source?: string; bitrate?: number
+    url: string; headers?: Record<string, string>; userAgent?: string; source?: string; bitrate?: number
   } | null> {
     const requestedSource = String((item as any).source || (item as any).sourceId || item.subSource || '')
     const candidates = [plugin, ...this.plugins.filter(p => {
@@ -313,6 +313,7 @@ export class PluginManager {
         return {
           url: result.url,
           headers: result.headers,
+          userAgent: result.userAgent,
           source: result.source,
           bitrate: typeof result.bitrate === 'number' ? result.bitrate : undefined,
         }

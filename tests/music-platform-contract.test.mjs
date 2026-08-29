@@ -35,7 +35,7 @@ test('source import accepts common LX Music and MusicFree method names', () => {
   assert.match(runner, /musicLyric/)
   assert.match(runner, /isLXUserApiCode/)
   assert.match(read('packages/web/src/core/plugin/lxUserApi.ts'), /EVENT_NAMES/)
-  assert.match(native, /viaProxy\(url: string, method = 'GET'\)/)
+  assert.match(native, /viaProxy\(\s*url: string,\s*method = 'GET'/)
   assert.match(read('packages/web/src/core/plugin/lxUserApi.ts'), /viaProxy\(url, method\)/)
 })
 

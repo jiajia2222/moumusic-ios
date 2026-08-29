@@ -54,9 +54,18 @@ async function handleProxy(request, url) {
     const val = request.headers.get(h)
     if (val) proxyHeaders.set(h, val)
   }
+  // Audio elements cannot set request headers.  The frontend therefore carries
+  // the source-provided Referer/User-Agent as tightly scoped query parameters;
+  // only these two playback headers are accepted here.
+  const sourceReferer = url.searchParams.get('referer')
+  const sourceUserAgent = url.searchParams.get('userAgent')
+  if (sourceReferer && /^https?:\/\//i.test(sourceReferer)) {
+    proxyHeaders.set('Referer', sourceReferer)
+  }
   proxyHeaders.set(
     'User-Agent',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    sourceUserAgent ||
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   )
 
   const method = url.searchParams.get('method') || request.method

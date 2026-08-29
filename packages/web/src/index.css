@@ -31,6 +31,78 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     radial-gradient(ellipse 90% 42% at 50% -12%, rgba(201, 41, 41, 0.2), transparent 68%),
     linear-gradient(180deg, #171519 0%, #0e0f12 55%, #0b0c0f 100%);
   color: var(--wm-ink);
+  isolation: isolate;
+}
+
+/*
+ * Liquid-glass system.  The blur is intentionally paired with a faint inner
+ * highlight and a dark tint: backdrop-filter alone looks like a transparent
+ * grey rectangle on top of artwork.  These tokens are shared by every major
+ * surface so the now-playing page, lists, settings, and tab bar feel like one
+ * material instead of a collection of unrelated cards.
+ */
+.wm-glass {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 18px 55px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: blur(28px) saturate(145%);
+  backdrop-filter: blur(28px) saturate(145%);
+}
+
+.wm-glass-subtle {
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+  backdrop-filter: blur(22px) saturate(130%);
+}
+
+.wm-liquid-orb {
+  position: absolute;
+  width: 19rem;
+  height: 19rem;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(50px);
+  opacity: 0.3;
+  transform: translate3d(0, 0, 0);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 129, 129, 0.75), rgba(236, 73, 73, 0.05) 66%);
+}
+
+.wm-liquid-orb.blue {
+  background: radial-gradient(circle at 35% 30%, rgba(113, 150, 255, 0.65), rgba(67, 70, 168, 0.03) 70%);
+  opacity: 0.18;
+}
+
+.wm-now-playing {
+  background:
+    linear-gradient(180deg, rgba(9, 10, 15, 0.36), rgba(9, 10, 15, 0.84) 74%),
+    radial-gradient(ellipse 110% 70% at 50% 0%, rgba(236, 73, 73, 0.24), transparent 75%);
+  -webkit-backdrop-filter: blur(42px) saturate(145%);
+  backdrop-filter: blur(42px) saturate(145%);
+}
+
+.wm-glass-highlight {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.wm-tabbar {
+  background: rgba(13, 14, 18, 0.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  backdrop-filter: blur(30px) saturate(150%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wm-liquid-orb {
+    display: none;
+  }
 }
 
 .wm-brand-mark {
@@ -115,8 +187,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 .wm-settings-card {
-  background: rgba(255, 255, 255, 0.065);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 35px rgba(0, 0, 0, 0.16);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
 }
 
 .wm-quality-selected {
