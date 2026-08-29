@@ -38,15 +38,26 @@ jobs:
       - name: Build unsigned IPA
         run: pnpm build:ipa
 
-      - name: Publish GitHub Release
+      - name: Ensure GitHub Release exists
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          gh release create "$RELEASE_TAG" \
-            ios/build/unsigned/Moumusic-unsigned.ipa \
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Moumusic $RELEASE_TAG" \
+              --notes "Automated unsigned mobile build. Artifacts must be signed before installation." \
+              --latest
+          fi
+
+      - name: Publish IPA to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            ios/build/unsigned/Moumusic-unsigned.ipa#Moumusic-unsigned.ipa \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "Moumusic $RELEASE_TAG" \
-            --notes "Automated unsigned iOS IPA build. This artifact must be signed before it can be installed on an iPhone." \
-            --latest
+            --clobber
