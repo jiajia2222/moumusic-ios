@@ -207,6 +207,23 @@ const qualityForLX = (quality?: string): string => {
   }
 }
 
+const LX_QUALITY_ORDER = ['128k', '192k', '320k', 'flac', 'flac24bit']
+
+/** Let a source advertise its real ladder instead of receiving an unsupported tier. */
+const supportedQualityForLX = (source: string, requested?: string, sourceInfo: Record<string, LXSourceInfo> = {}) => {
+  const wanted = qualityForLX(requested)
+  const qualitys = sourceInfo[source]?.qualitys || []
+  if (qualitys.length === 0 || qualitys.includes(wanted)) return wanted
+  const wantedIndex = LX_QUALITY_ORDER.indexOf(wanted)
+  const supported = qualitys
+    .map(value => ({ value, index: LX_QUALITY_ORDER.indexOf(value) }))
+    .filter(entry => entry.index >= 0)
+    .sort((a, b) => a.index - b.index)
+  if (supported.length === 0) return wanted
+  const atOrBelow = supported.filter(entry => entry.index <= wantedIndex)
+  return (atOrBelow[atOrBelow.length - 1] || supported[0]).value
+}
+
 const isObject = (value: unknown): value is Record<string, any> => !!value && typeof value === 'object'
 
 export function isLXUserApiCode(code: string): boolean {
@@ -233,7 +250,7 @@ export function loadLXUserApi(
   const request = (url: string, options: LXRequestOptions = {}, callback: LXRequestCallback): (() => void) => {
     let cancelled = false
     const method = String(options.method || 'GET').toUpperCase()
-    const headers = options.headers || {}
+    const headers = { ...(options.headers || {}) }
     let body: BodyInit | undefined
     if (options.body != null) body = typeof options.body === 'string' ? options.body : options.body
     else if (options.form != null) body = new URLSearchParams(options.form as Record<string, string>).toString()
@@ -244,7 +261,10 @@ export function loadLXUserApi(
       ? Math.min(options.timeout, 60_000) : 60_000
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
     const timer = setTimeout(() => controller?.abort(), timeout)
-    void fetcher(viaProxy(url, method), {
+    const requestUrl = Object.keys(headers).length > 0
+      ? viaProxy(url, method, headers)
+      : viaProxy(url, method)
+    void fetcher(requestUrl, {
       method,
       headers,
       body,
@@ -299,6 +319,8 @@ export function loadLXUserApi(
 
   const lx = {
     EVENT_NAMES: eventNames,
+    // Keep the source ids understood by LX Mobile visible to compatible scripts.
+    sources: ['kw', 'kg', 'tx', 'wy', 'mg', 'xm', 'local'],
     request,
     send,
     on,
@@ -320,7 +342,22 @@ export function loadLXUserApi(
 
   // The mobile runtime calls lx_setup before evaluating the user script. Execute
   // the same lifecycle here, while exposing the aliases used by older scripts.
-  const setup = () => lx
+  const setup = (...args: any[]) => {
+    // LX Mobile passes the script metadata to lx_setup. Older scripts call it
+    // without arguments, so every field remains optional here.
+    const [, id, name, description, version, author, homepage, rawScript] = args
+    Object.assign(lx.currentScriptInfo, {
+      id: typeof id === 'string' && id ? id : lx.currentScriptInfo.id,
+      name: typeof name === 'string' && name ? name : lx.currentScriptInfo.name,
+      description: typeof description === 'string' ? description : lx.currentScriptInfo.description,
+      version: typeof version === 'string' && version ? version : lx.currentScriptInfo.version,
+      author: typeof author === 'string' ? author : lx.currentScriptInfo.author,
+      homepage: typeof homepage === 'string' ? homepage : lx.currentScriptInfo.homepage,
+      rawScript: typeof rawScript === 'string' && rawScript ? rawScript : code,
+    })
+    return lx
+  }
+  globalObject.lx_setup = setup
   const script = new Function(
     'lx_setup', 'globalThis', 'lx', 'EVENT_NAMES', 'on', 'send', 'request', 'utils',
     'fetch', 'console', 'setTimeout', 'clearTimeout', 'Promise', 'URL', 'URLSearchParams',
@@ -351,7 +388,7 @@ export function loadLXUserApi(
     return await requestHandler.call(lx, {
       source,
       action,
-      info: { type: qualityForLX(quality), musicInfo: item },
+      info: { type: supportedQualityForLX(source, quality, sourceInfo), musicInfo: item },
     })
   }
 
@@ -378,7 +415,7 @@ export function loadLXUserApi(
       if (typeof data === 'string') return { url: data }
       return {
         url: String(data?.url || ''),
-        quality,
+        quality: typeof data?.type === 'string' ? data.type : quality,
         headers: isObject(data) ? data.headers : undefined,
       }
     },

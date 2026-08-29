@@ -53,6 +53,9 @@ const STORAGE_QUALITY = 'musicfree-quality'
  * 播放與下載共用同一個設定：選了 999，下載也是 999。
  */
 export type Quality = '128' | '192' | '320' | '740' | '999'
+
+/** 搜尋結果的容器類型，和 LX Mobile 的四個搜尋分頁保持一致。 */
+export type DetailKind = 'album' | 'sheet' | 'artist'
 export const QUALITIES: { value: Quality; label: string; hint: string }[] = [
   { value: '128', label: '標準 · 128 kbps', hint: 'AAC/MP3，最省流量' },
   { value: '192', label: '較高 · 192 kbps', hint: '更清晰，流量適中' },
@@ -649,6 +652,7 @@ export function useMusicApp() {
   const [recommendUnsupported, setRecommendUnsupported] = useState(false)
   // 專輯/歌單詳情頁
   const [albumDetail, setAlbumDetail] = useState<MusicItem | null>(null)
+  const [albumDetailKind, setAlbumDetailKind] = useState<DetailKind>('album')
   const [albumTracks, setAlbumTracks] = useState<MusicItem[]>([])
   const [albumLoading, setAlbumLoading] = useState(false)
 
@@ -1762,15 +1766,19 @@ export function useMusicApp() {
   }
 
   const handleItemClick = (item: MusicItem) => {
-    if (item.type === 'album' || item.type === 'sheet') {
-      // 專輯/歌單：顯示專輯詳情
+    if (item.type === 'album' || item.type === 'sheet' || item.type === 'artist') {
+      // 專輯／歌單／歌手：顯示容器詳情，不把容器誤當成可播放歌曲。
+      const kind: DetailKind = item.type === 'artist'
+        ? 'artist'
+        : item.type === 'sheet' ? 'sheet' : 'album'
+      setAlbumDetailKind(kind)
       setAlbumDetail(item)
       // 如果後端已經返回 musicList，直接使用
       const tracks = item.musicList || []
       setAlbumTracks(tracks)
       if (tracks.length === 0) {
         // 需要從後端載入
-        loadAlbumTracks(item)
+        loadAlbumTracks(item, kind)
       }
     } else {
       // 歌曲：連同它所在的清單一起傳入，播完才知道要接什麼。
@@ -1792,8 +1800,8 @@ export function useMusicApp() {
     }
   }
 
-  // 專輯曲目由音源提供（插件的 getAlbumInfo），app 不直接打後端
-  const loadAlbumTracks = async (item: MusicItem) => {
+  // 容器曲目由音源提供，app 不直接打某個特定後端。
+  const loadAlbumTracks = async (item: MusicItem, kind: DetailKind = 'album') => {
     setAlbumLoading(true)
     try {
       const platform = item.platform || ''
@@ -1802,15 +1810,19 @@ export function useMusicApp() {
         setErrorMessage(t('找不到音源「{platform}」，請到「設置」頁安裝', { platform: platform || '?' }))
         return
       }
-      const tracks = await pluginManager.getAlbumInfoForPlugin(plugin.name, item)
+      const tracks = await pluginManager.getDetailForPlugin(plugin.name, item, kind)
       if (tracks === null) {
-        setErrorMessage(t('音源「{name}」不支援專輯詳情', { name: plugin.name }))
+        const detailLabel = kind === 'artist' ? t('歌手') : kind === 'sheet' ? t('歌單') : t('專輯')
+        setErrorMessage(t('音源「{name}」不支援{detail}', {
+          name: plugin.name,
+          detail: detailLabel,
+        }))
         return
       }
       setAlbumTracks(tracks)
     } catch (e) {
       console.error('Load album tracks failed:', e)
-      setErrorMessage(t('載入專輯失敗: {msg}', { msg: e instanceof Error ? e.message : String(e) }))
+      setErrorMessage(t('載入詳情失敗: {msg}', { msg: e instanceof Error ? e.message : String(e) }))
     } finally {
       setAlbumLoading(false)
     }
@@ -1819,6 +1831,7 @@ export function useMusicApp() {
   // 返回搜尋結果
   const goBackToSearch = () => {
     setAlbumDetail(null)
+    setAlbumDetailKind('album')
     setAlbumTracks([])
   }
 
@@ -2038,6 +2051,7 @@ export function useMusicApp() {
     syncInput,
     setSyncInput,
     albumDetail,
+    albumDetailKind,
     albumLoading,
     albumTracks,
     currentTime,

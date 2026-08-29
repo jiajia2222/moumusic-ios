@@ -42,3 +42,25 @@ test('playback preserves source headers when routing audio through the web proxy
   assert.match(app, /viaProxy\(media\.url, 'GET', media\.headers\)/)
   assert.match(app, /__moumusicBinary: true/)
 })
+
+test('search mirrors LX typed results and routes album, sheet, and artist details', () => {
+  const ui = read('packages/web/src/ui/AppleUI.tsx')
+  const app = read('packages/web/src/musicApp.ts')
+  const manager = read('packages/web/src/core/plugin/manager.ts')
+  assert.match(ui, /searchTypes/)
+  assert.match(ui, /專輯|专辑/)
+  assert.match(ui, /歌單|歌单/)
+  assert.match(ui, /歌手/)
+  assert.match(app, /getDetailForPlugin/)
+  assert.match(app, /albumDetailKind/)
+  assert.match(manager, /getDetailForPlugin/)
+  assert.match(manager, /getMusicSheetInfo|getArtistInfo/)
+})
+
+test('LX User API keeps the mobile setup contract and forwards request headers', () => {
+  const userApi = read('packages/web/src/core/plugin/lxUserApi.ts')
+  assert.match(userApi, /globalObject\.lx_setup/)
+  assert.match(userApi, /rawScript|currentScriptInfo/)
+  assert.match(userApi, /viaProxy\(url, method, headers\)/)
+  assert.match(userApi, /sources: \['kw', 'kg', 'tx', 'wy', 'mg', 'xm', 'local'\]/)
+})

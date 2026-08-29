@@ -11,7 +11,7 @@ import { PluginRunner } from './runner'
 function normalizeItemList(result: any): any[] {
   if (Array.isArray(result)) return result
   if (!result || typeof result !== 'object') return []
-  for (const key of ['data', 'musicList', 'albumList', 'artistList', 'sheetList']) {
+  for (const key of ['data', 'musicList', 'songs', 'albumList', 'artistList', 'sheetList']) {
     if (Array.isArray(result[key])) return result[key]
   }
   return []
@@ -47,10 +47,21 @@ export function normalizeMusicItem(raw: any): MusicItem {
   )
   const url = firstValue(raw.url, raw.playUrl, raw.play_url, raw.audioUrl, raw.audio_url)
   const durationValue = firstValue(raw.duration, raw.interval, raw.durationSec, raw.time)
+  const rawType = firstValue(raw.type, raw.itemType, raw.kind)
 
   item.id = id === undefined ? '' : String(id)
   item.title = title === undefined ? '' : String(title)
   item.artist = artist === undefined ? '' : String(artist)
+  if (typeof rawType === 'string') {
+    const type = rawType.toLowerCase()
+    if (['music', 'song', 'track'].includes(type)) item.type = 'music'
+    else if (['album', 'record'].includes(type)) item.type = 'album'
+    else if (['sheet', 'playlist', 'music-sheet'].includes(type)) item.type = 'sheet'
+    else if (['artist', 'singer'].includes(type)) item.type = 'artist'
+  }
+  if (Array.isArray(raw.musicList)) {
+    item.musicList = raw.musicList.map((track: any) => normalizeMusicItem(track))
+  }
   if (album !== undefined) item.album = String(album)
   if (typeof artwork === 'string') item.artwork = artwork
   if (typeof url === 'string') item.url = url
@@ -238,6 +249,13 @@ export class PluginManager {
       const item = normalizeMusicItem(raw) as any
       item.platform = pluginName
       if (!item.source) item.source = pluginName
+      if (Array.isArray(item.musicList)) {
+        item.musicList = item.musicList.map((track: MusicItem) => ({
+          ...track,
+          platform: pluginName,
+          source: (track as any).source || pluginName,
+        }))
+      }
       return item
     })
   }
@@ -270,16 +288,34 @@ export class PluginManager {
     }
   }
 
+  /**
+   * 載入容器詳情。LX Mobile 把專輯、歌單、歌手當成三種搜尋結果，
+   * Kumone 則把它們都導向獨立的內容頁；這裡保留插件方法名的差異，
+   * UI 不需要知道音源到底是舊格式還是 LX 相容格式。
+   */
+  async getDetailForPlugin(
+    name: string,
+    item: MusicItem,
+    kind: 'album' | 'sheet' | 'artist' = 'album',
+  ): Promise<MusicItem[] | null> {
+    const p = this.plugins.find(p => p.name.toLowerCase() === name.toLowerCase())
+    if (!p || !this.enabled.has(p.name)) return null
+    const method = kind === 'artist'
+      ? 'getArtistInfo'
+      : kind === 'sheet'
+        ? 'getMusicSheetInfo'
+        : 'getAlbumInfo'
+    const fn = (p as any)[method]
+    if (typeof fn !== 'function') return null
+    const result: any = await fn.call(p, item, 1) ?? {}
+    return this.tagItems(normalizeItemList(result), p.name)
+  }
+
   /** 專輯內曲目。插件未實作時回 null */
   async getAlbumInfoForPlugin(
     name: string, albumItem: MusicItem,
   ): Promise<MusicItem[] | null> {
-    const p = this.plugins.find(p => p.name.toLowerCase() === name.toLowerCase())
-    if (!p || !this.enabled.has(p.name)) return null
-    const fn = (p as any).getAlbumInfo
-    if (typeof fn !== 'function') return null
-    const result: any = await fn.call(p, albumItem) ?? {}
-    return this.tagItems(normalizeItemList(result), p.name)
+    return this.getDetailForPlugin(name, albumItem, 'album')
   }
 
   /**

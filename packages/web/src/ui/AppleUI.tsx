@@ -339,7 +339,7 @@ function NowPlayingSheet({
   )
 }
 
-/** 歌曲／專輯列。用微妙的分隔線而非卡片邊框，接近 iOS 的 list */
+/** 歌曲／專輯／歌單／歌手列。用微妙的分隔線而非卡片邊框，接近 iOS 的 list */
 function Row({
   item, active, onClick, onDownload, favorite, onToggleFavorite, downloading,
 }: {
@@ -381,6 +381,8 @@ function Row({
         <div className="text-[13px] text-white/45 truncate mt-0.5">
           {item.artist || t('未知歌手')}
           {item.type === 'album' && <span className="ml-1.5 text-white/30">· {t('專輯')}</span>}
+          {item.type === 'sheet' && <span className="ml-1.5 text-white/30">· {t('歌單')}</span>}
+          {item.type === 'artist' && <span className="ml-1.5 text-white/30">· {t('歌手')}</span>}
         </div>
       </div>
       {onToggleFavorite && (
@@ -535,7 +537,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
   // 訂閱語言：切語言時整棵樹重繪，所有 t() 重新取值
   const lang = useLang()
   const {
-    albumDetail, albumLoading, albumTracks, applySyncCode, createSyncCode,
+    albumDetail, albumDetailKind, albumLoading, albumTracks, applySyncCode, createSyncCode,
     currentTime, currentView, cyclePlayMode, downloads, downloadingKey, duration,
     exportDownload, exportFavorites, favorites,
     formatTime, goBackToSearch, handleDownload, handleItemClick, handleSearchSubmit,
@@ -555,6 +557,17 @@ export default function AppleUI({ app }: { app: MusicApp }) {
     syncCode, syncInput, toggleFavorite, togglePlay, togglePlugin,
     lyricLines, lyricLoading, lyricIndex, copyLyrics,
   } = app
+  // LX Mobile 的搜索页分成四种结果；保留同一个搜索框和分页，只切换
+  // source plugin 收到的 type，用户添加的旧格式音源也能继续只实现 music。
+  const searchTypes = [
+    { value: 'music' as const, label: t('歌曲') },
+    { value: 'album' as const, label: t('專輯') },
+    { value: 'sheet' as const, label: t('歌單') },
+    { value: 'artist' as const, label: t('歌手') },
+  ]
+  const detailLabel = albumDetailKind === 'artist'
+    ? t('歌手')
+    : albumDetailKind === 'sheet' ? t('歌單') : t('專輯')
   /** 歌詞面板開著沒。純畫面狀態，留在這一層 */
   const [showLyrics, setShowLyrics] = useState(false)
   // 沒有在播的東西就沒有歌詞可看，面板自動收起
@@ -594,11 +607,11 @@ export default function AppleUI({ app }: { app: MusicApp }) {
    * 下一首）如果也強制彈出，使用者好不容易收起面板回到清單，下一首一到又被
    * 蓋掉 —— 那是搶控制權。所以掛在點擊上，而不是掛在 playingItem 變化上。
    *
-   * 專輯／歌單那一列點下去是進專輯頁而不是播放，那時不要展開歌詞。
+   * 專輯／歌單／歌手那一列點下去是進詳情頁而不是播放，那時不要展開歌詞。
    */
   const playAndShowLyrics = (item: MusicItem) => {
     handleItemClick(item)
-    if (item.type !== 'album' && item.type !== 'sheet') setShowLyrics(true)
+    if (item.type !== 'album' && item.type !== 'sheet' && item.type !== 'artist') setShowLyrics(true)
   }
 
   const tabs = [
@@ -884,14 +897,28 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                     {t('搜尋')}
                   </button>
                 </div>
-
-                {/*
-                  這裡曾經有「歌曲／專輯」切換。移掉了 —— 搜尋頁只搜歌。
-                  專輯的資料只有網易雲有，而它會隨機拒絕請求（見 worker/why.js
-                  的 neteaseFetch），做到可靠要靠輪替主機重試，體驗仍然不穩。
-                  能力本身留在音源與後端（/api/why-album*），要恢復只要把這段
-                  切換器加回來。
-                */}
+                <div className="mt-3 grid grid-cols-4 gap-1 p-1 rounded-[14px] wm-glass-subtle"
+                  role="tablist" aria-label={t('搜尋類型')}>
+                  {searchTypes.map(type => (
+                    <button
+                      key={type.value}
+                      role="tab"
+                      aria-selected={searchType === type.value}
+                      onClick={() => {
+                        setSearchType(type.value)
+                        setSearchPage(1)
+                        if (keyword.trim()) void search(1, false, type.value)
+                      }}
+                      className={`min-h-11 rounded-[10px] px-2 text-[13px] transition ${
+                        searchType === type.value
+                          ? 'bg-white/[0.16] text-white shadow-sm'
+                          : 'text-white/45 active:bg-white/10'
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               {loading && <EmptyState text={t('搜尋中…')} />}
               {!loading && results.length === 0 && (
@@ -926,7 +953,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
             </>
           )}
 
-          {/* ── 專輯詳情 ── */}
+          {/* ── 專輯／歌單／歌手詳情 ── */}
           {albumDetail && (
             <>
               <div className="px-4 pt-6 pb-4">
@@ -947,15 +974,15 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                   </div>
                   <div className="min-w-0">
                     <h1 className="text-[24px] font-bold leading-tight truncate">
-                      {albumDetail.title || t('未知專輯')}
+                      {albumDetail.title || (albumDetailKind === 'artist' ? t('未知歌手') : t('未知專輯'))}
                     </h1>
                     <p className="text-[15px] text-white/45 truncate mt-0.5">{albumDetail.artist}</p>
-                    <p className="text-[13px] text-white/30 mt-1">{t('{n} 首', { n: albumTracks.length })}</p>
+                    <p className="text-[13px] text-white/30 mt-1">{detailLabel} · {t('{n} 首', { n: albumTracks.length })}</p>
                   </div>
                 </div>
               </div>
               {albumLoading && <EmptyState text={t('載入中…')} />}
-              {!albumLoading && albumTracks.length === 0 && <EmptyState text={t('此專輯沒有曲目。')} />}
+              {!albumLoading && albumTracks.length === 0 && <EmptyState text={t('此詳情沒有曲目。')} />}
               <div className="wm-glass-subtle rounded-[18px] overflow-hidden divide-y divide-white/[0.06]">
                 {albumTracks.map((track, idx) => (
                   <Row
