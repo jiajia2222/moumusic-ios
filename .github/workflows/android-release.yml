@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag to upload
         required: true
-        default: v1.10.18
+        default: v1.10.19
         type: string
 
 permissions:
