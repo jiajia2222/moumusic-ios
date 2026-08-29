@@ -87,9 +87,14 @@ run('npx', ['cap', 'sync', 'android'])
 const task = variant === 'release' ? 'assembleRelease' : 'assembleDebug'
 run('./gradlew', [task, '--no-daemon'], ANDROID)
 
-const apk = path.join(ANDROID, `app/build/outputs/apk/${variant}/app-${variant}.apk`)
-if (!fs.existsSync(apk)) {
-  console.error(`✘ 找不到產物：${apk}`)
+const apkDir = path.join(ANDROID, `app/build/outputs/apk/${variant}`)
+const apkCandidates = [
+  path.join(apkDir, `app-${variant}.apk`),
+  path.join(apkDir, `app-${variant}-unsigned.apk`),
+]
+const apk = apkCandidates.find(candidate => fs.existsSync(candidate))
+if (!apk) {
+  console.error(`✘ 找不到產物：${apkCandidates.join(' 或 ')}`)
   process.exit(1)
 }
 const mb = (fs.statSync(apk).size / 1024 / 1024).toFixed(2)

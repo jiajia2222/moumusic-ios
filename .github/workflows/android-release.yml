@@ -49,8 +49,14 @@ jobs:
 
       - name: Verify APK metadata
         run: |
-          test -f android/app/build/outputs/apk/release/app-release.apk
-          sha256sum android/app/build/outputs/apk/release/app-release.apk
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            APK_PATH=android/app/build/outputs/apk/release/app-release.apk
+          else
+            test -f android/app/build/outputs/apk/release/app-release-unsigned.apk
+            APK_PATH=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          fi
+          echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
+          sha256sum "$APK_PATH"
 
       - name: Ensure GitHub Release exists
         env:
@@ -72,6 +78,6 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           gh release upload "$RELEASE_TAG" \
-            android/app/build/outputs/apk/release/app-release.apk#Moumusic-release-unsigned.apk \
+            "$APK_PATH#Moumusic-release-unsigned.apk" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber
