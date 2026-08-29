@@ -104,8 +104,29 @@ public final class KumoneSourcePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     private static func normalizeLyric(_ object: [String: Any]) -> [String: Any] {
+        func normalized(_ raw: String) -> String {
+            guard raw.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{") else {
+                return raw
+            }
+            var output: [String] = []
+            for line in raw.components(separatedBy: .newlines) {
+                guard let data = line.data(using: .utf8),
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let timestamp = json["t"] as? NSNumber else { continue }
+                let text = (json["c"] as? [[String: Any]] ?? [])
+                    .compactMap { $0["tx"] as? String }
+                    .joined()
+                guard !text.isEmpty else { continue }
+                let seconds = max(0, timestamp.doubleValue / 1000)
+                let minutes = Int(seconds / 60)
+                let remainder = seconds - Double(minutes * 60)
+                output.append(String(format: "[%02d:%06.3f]%@", minutes, remainder, text))
+            }
+            return output.joined(separator: "\n")
+        }
+
         func lyric(_ key: String) -> String {
-            (object[key] as? [String: Any])?["lyric"] as? String ?? ""
+            normalized((object[key] as? [String: Any])?["lyric"] as? String ?? "")
         }
         return [
             "lyric": lyric("lrc"),

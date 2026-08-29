@@ -27,6 +27,12 @@ import {
 } from '../shared/sync.js'
 import { checkProxyTarget, isPrivateIp, parseAllowedHosts } from '../shared/proxy-guard.js'
 import { RateLimiter } from '../shared/rate-limit.js'
+import {
+  lyricKumoneNetease,
+  normalizeKumoneNeteaseTrack,
+  resolveKumoneUnblock,
+  searchKumoneNetease,
+} from '../shared/kumone.js'
 
 // import.meta.dirname 需要 Node 20.11+。版本不符時給明確訊息就退出，不要讓它到
 // 後面才以看不懂的方式壞掉（例如 STATIC_DIR 變成 undefined、靜態檔全 404）。
@@ -578,7 +584,8 @@ async function getYouTubeMedia(videoId) {
 
 // ── WhyMusic（本站聚合音源）────────────────────────────────────────
 // 對外只呈現一個來源 WhyMusic，底下扇出到多個子音源：
-//   netease / joox  → 經上游 GD Music API（music-api.gdstudio.xyz）代理
+//   netease          → Kumone 的加密 NetEase API（失败时退回 GD 搜索）
+//   joox             → 經上游 GD Music API（music-api.gdstudio.xyz）代理
 //   audiomack       → 走本站自己的 OAuth 實作（searchAudiomack / getAudiomackMedia）
 // 三者各自補足對方的缺口：netease 簡體曲庫最全、joox 港台繁體與粵語 live 版本多、
 // audiomack 則是歐美獨立音樂 / hip-hop / afrobeats。
@@ -739,16 +746,24 @@ function gdNormalizeSong(raw, fallbackSource) {
     : String(raw.artist || '')
   return {
     id: String(raw.url_id || raw.id || ''),
-    title: String(raw.name || ''),
+    title: String(raw.name || raw.title || ''),
     artist,
-    album: String(raw.album || ''),
+    album: String(raw.album?.name || raw.album || ''),
     platform: 'WhyMusic',
     // GD 的子音源（netease / joox…），播放時要原樣帶回上游
     subSource: String(raw.source || fallbackSource || ''),
-    picId: raw.pic_id ? String(raw.pic_id) : '',
-    lyricId: raw.lyric_id ? String(raw.lyric_id) : '',
+    artwork: String(raw.pic || raw.pic_url || raw.artwork || ''),
+    picId: String(raw.pic_id || raw.picId || ''),
+    lyricId: String(raw.lyric_id || raw.lyricId || ''),
+    duration: Number(raw.duration || raw.dt || 0) > 10000
+      ? Number(raw.duration || raw.dt || 0) / 1000
+      : Number(raw.duration || raw.dt || 0),
     type: 'music',
   }
+}
+
+function neteaseNormalizeSong(raw) {
+  return { ...normalizeKumoneNeteaseTrack(raw), platform: 'WhyMusic' }
 }
 
 /** Audiomack 搜尋結果 → WhyMusic MusicItem */
@@ -788,11 +803,19 @@ function audiomackContainerToWhyItem(raw) {
   }
 }
 
-/** 取單一子源的搜尋結果：audiomack 走自家 OAuth，其餘經 GD 上游 */
+/** 取單一子源的搜尋結果：NetEase 走 Kumone API，其餘經 GD 上游 */
 async function searchWhySubSource(source, keyword, page, count) {
   if (source === AUDIOMACK_SOURCE) {
     const list = await searchAudiomack(keyword, 'music', page)
     return list.map(audiomackToWhyItem)
+  }
+  if (source === 'netease') {
+    try {
+      const songs = await searchKumoneNetease(keyword, page, count)
+      if (songs.length > 0) return songs.map(neteaseNormalizeSong)
+    } catch (err) {
+      console.error(`[why] Kumone NetEase search failed: ${err.message}`)
+    }
   }
   const data = await gdRequest('search', {
     source, name: keyword, count: String(count), pages: String(page),
@@ -844,7 +867,7 @@ async function getWhySubSourceUrl(songId, source, bitrate = GD_BITRATE) {
  * 1005 Not authorized），用歌名+歌手到其餘子源找同一首歌再試。
  * 這是跨子源救援路徑，繁簡歸一化讓「浮誇」也能在簡體源命中。
  */
-async function resolveWhyMusicUrl({ id, source, bitrate, title, artist, exclude }) {
+async function resolveWhyMusicUrl({ id, source, bitrate, title, artist, duration, exclude }) {
   // exclude：呼叫端已知播不出來的子源。伺服器端只看得到「解析失敗」，但有些
   // URL 解析成功卻在客戶端播不出來（CDN 對該地區回 403、容器格式不支援…），
   // 那種情況只有前端知道，所以要讓它把壞掉的子源排除後重新解析。
@@ -876,6 +899,19 @@ async function resolveWhyMusicUrl({ id, source, bitrate, title, artist, exclude 
       console.error(`[why] fallback search failed on ${candidateSource}: ${err.message}`)
     }
   }
+
+  // This is Kumone's actual UnblockService path. GD's source=kuwo/kugou URL
+  // endpoint is not equivalent: it often returns an empty URL even when the
+  // provider's own resolver can return a stream.
+  const unblocked = await resolveKumoneUnblock({
+    id: source === 'netease' || !source ? id : '',
+    title,
+    artist,
+    duration,
+    bitrate,
+    exclude: [...skip, source].filter(Boolean),
+  }, fetch, GD_API)
+  if (unblocked) return unblocked
   return null
 }
 
@@ -883,6 +919,13 @@ async function resolveWhyMusicUrl({ id, source, bitrate, title, artist, exclude 
 // 結果就隨 artwork 回來了），直接回空值，不要拿 source=audiomack 去打 GD。
 async function getWhyMusicLyric(lyricId, source) {
   if (source === AUDIOMACK_SOURCE) return { lyric: '', tlyric: '' }
+  if (source === 'netease') {
+    try {
+      return await lyricKumoneNetease(lyricId)
+    } catch (err) {
+      console.error(`[why] Kumone NetEase lyric failed: ${err.message}`)
+    }
+  }
   const data = await gdRequest('lyric', { source, id: lyricId })
   return { lyric: data?.lyric || '', tlyric: data?.tlyric || '' }
 }
@@ -1352,6 +1395,7 @@ const server = http.createServer(async (req, res) => {
       const bitrate = parseInt(url.searchParams.get('br') || String(GD_BITRATE), 10)
       const title = url.searchParams.get('title') || ''
       const artist = url.searchParams.get('artist') || ''
+      const duration = parseFloat(url.searchParams.get('duration') || '0') || 0
       // 前端已知播不出來的子源（客戶端才知道的失敗，見 resolveWhyMusicUrl 註解）
       const exclude = (url.searchParams.get('exclude') || '')
         .split(',').map(s => s.trim()).filter(Boolean)
@@ -1360,7 +1404,7 @@ const server = http.createServer(async (req, res) => {
         return
       }
       try {
-        const resolved = await resolveWhyMusicUrl({ id: songId, source, bitrate, title, artist, exclude })
+        const resolved = await resolveWhyMusicUrl({ id: songId, source, bitrate, title, artist, duration, exclude })
         if (!resolved) {
           jsonResponse(res, { error: 'No playable GD Music source found' }, 404)
           return

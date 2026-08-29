@@ -23,6 +23,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // 自訂插件要在 super.onCreate 之前註冊，Capacitor 才會把它掛進 bridge
         registerPlugin(BackgroundPlaybackPlugin.class);
+        registerPlugin(MoumusicHttpPlugin.class);
         super.onCreate(savedInstanceState);
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().getSettings()

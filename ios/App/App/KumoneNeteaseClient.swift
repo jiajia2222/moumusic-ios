@@ -25,6 +25,21 @@ enum KumoneNeteaseClient {
     private static let userAgent =
         "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"
 
+    private static func eapiHeader() -> [String: Any] {
+        [
+            "os": "pc",
+            "appver": "3.1.17",
+            "osver": "Version 14.0 (Build 23A344)",
+            "deviceId": "kumone",
+            "requestId": String(Int.random(in: 20_000_000...30_000_000)),
+            "clientSign": "",
+            "versioncode": "140",
+            "buildver": String(Int(Date().timeIntervalSince1970)),
+            "resolution": "1920x1080",
+            "channel": "",
+        ]
+    }
+
     static func search(query: String, page: Int, limit: Int = 30) async throws -> [[String: Any]] {
         let root = try await request(
             path: "/cloudsearch/pc",
@@ -50,12 +65,20 @@ enum KumoneNeteaseClient {
         case "740": level = "lossless"
         default: level = "hires"
         }
-        let root = try await request(
-            path: "/song/enhance/player/url/v1",
-            mode: .eapi,
-            payload: ["ids": "[\(id)]", "level": level, "encodeType": "flac"]
-        )
-        return (root["data"] as? [[String: Any]])?.first
+        var levels = [level]
+        if level != "standard" { levels.append("standard") }
+        var last: [String: Any]?
+        for candidate in levels {
+            let root = try await request(
+                path: "/song/enhance/player/url/v1",
+                mode: .eapi,
+                payload: ["ids": "[\(id)]", "level": candidate, "encodeType": "flac"]
+            )
+            let data = (root["data"] as? [[String: Any]])?.first
+            last = data
+            if let url = data?["url"] as? String, !url.isEmpty { return data }
+        }
+        return last
     }
 
     static func lyric(id: String) async throws -> [String: Any] {
@@ -98,7 +121,11 @@ enum KumoneNeteaseClient {
         mode: RequestMode,
         payload: [String: Any]
     ) async throws -> [String: Any] {
-        let json = try JSONSerialization.data(withJSONObject: payload)
+        var requestPayload = payload
+        if case .eapi = mode {
+            requestPayload["header"] = eapiHeader()
+        }
+        let json = try JSONSerialization.data(withJSONObject: requestPayload)
         let fields: [String: String]
         let url: URL
         switch mode {

@@ -43,4 +43,4 @@ pnpm build:ipa
 
 ## 릴리스
 
-현재 안정 버전: [Moumusic v1.10.17](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.17).
+현재 안정 버전: [Moumusic v1.10.18](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.18).

@@ -35,7 +35,7 @@ declare global {
     }
     KumoneSource?: {
       search(options: { query: string; page?: number; limit?: number }): Promise<{ data?: unknown[]; isEnd?: boolean }>
-      media(options: { id: string; quality?: string }): Promise<{ url?: string; source?: string; quality?: string; bitrate?: number }>
+      media(options: { id: string; quality?: string; title?: string; artist?: string; duration?: number }): Promise<{ url?: string; source?: string; quality?: string; bitrate?: number }>
       lyric(options: { id: string }): Promise<Record<string, unknown>>
     }
     __WHYMUSIC_NATIVE__?: boolean
@@ -81,7 +81,9 @@ import { registerPlugin } from '@capacitor/core'
  * URLSession.  The Swift side registers this bridge without adding a third-party
  * Capacitor dependency.
  */
-if (isIOSNative() && typeof window !== 'undefined') {
+if (isNative() && typeof window !== 'undefined') {
   window.MoumusicHttp = registerPlugin('MoumusicHttp') as Window['MoumusicHttp']
+}
+if (isIOSNative() && typeof window !== 'undefined') {
   window.KumoneSource = registerPlugin('KumoneSource') as Window['KumoneSource']
 }

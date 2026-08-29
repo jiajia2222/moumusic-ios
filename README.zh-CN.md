@@ -45,4 +45,4 @@ pnpm build:ipa
 
 ## 版本
 
-当前稳定版：[Moumusic v1.10.17](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.17)。
+当前稳定版：[Moumusic v1.10.18](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.18)。

@@ -43,4 +43,4 @@ IPA без подписи нельзя установить на iPhone напр
 
 ## Релиз
 
-Текущий стабильный выпуск: [Moumusic v1.10.17](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.17).
+Текущий стабильный выпуск: [Moumusic v1.10.18](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.18).

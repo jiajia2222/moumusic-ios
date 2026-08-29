@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag to create
         required: true
-        default: v1.10.17
+        default: v1.10.18
         type: string
 
 permissions:

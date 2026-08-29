@@ -162,6 +162,7 @@ async function handleApi(pathname, request, url, env) {
         bitrate: parseInt(url.searchParams.get('br') || String(GD_BITRATE), 10),
         title,
         artist: url.searchParams.get('artist') || '',
+        duration: parseFloat(url.searchParams.get('duration') || '0') || 0,
         // 前端已知播不出來的子源（客戶端才知道的失敗，見 resolveWhyMusicUrl 註解）
         exclude: (url.searchParams.get('exclude') || '')
           .split(',').map(s => s.trim()).filter(Boolean),

@@ -43,4 +43,4 @@ Un IPA sin firmar no se puede instalar directamente en un iPhone. Fírmalo prime
 
 ## Lanzamiento
 
-Versión estable actual: [Moumusic v1.10.17](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.17).
+Versión estable actual: [Moumusic v1.10.18](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.18).
