@@ -240,7 +240,10 @@ const pyncmd = async ({ id, bitrate }, request, gdApi) => {
   const query = new URLSearchParams({ types: 'url', source: 'netease', id: String(id), br: String(bitrate || 320) })
   const data = await json(request, `${gdApi}?${query}`, 'GD pyncmd')
   const url = String(data?.url || '').replace(/^http:/, 'https:')
-  return Number(data?.br) > 0 && url ? { url, source: 'pyncmd', id: String(id) } : null
+  const actualBitrate = Number(data?.br)
+  return actualBitrate > 0 && url
+    ? { url, source: 'pyncmd', id: String(id), bitrate: actualBitrate }
+    : null
 }
 
 const providerName = (value) => String(value || '')
@@ -248,7 +251,7 @@ const providerName = (value) => String(value || '')
   .replace(/[（([【].*?[)）\]】]/g, '')
   .replace(/[\s\-_·・,，.。!！?？'"、/\\|&+]/g, '')
 
-const joox = async (track, request, gdApi) => {
+const joox = async (track, bitrate, request, gdApi) => {
   const query = new URLSearchParams({
     types: 'search',
     source: 'joox',
@@ -264,10 +267,13 @@ const joox = async (track, request, gdApi) => {
   const match = exactTitle || list[0]
   const id = String(match?.url_id || match?.id || '')
   if (!id) return null
-  const urlQuery = new URLSearchParams({ types: 'url', source: 'joox', id, br: '320' })
+  const urlQuery = new URLSearchParams({ types: 'url', source: 'joox', id, br: String(bitrate || 320) })
   const resolved = await json(request, `${gdApi}?${urlQuery}`, 'GD Joox url')
   const url = String(resolved?.url || '').replace(/^http:/, 'https:')
-  return url ? { url, source: 'joox', id } : null
+  const actualBitrate = Number(resolved?.br)
+  return url
+    ? { url, source: 'joox', id, ...(actualBitrate > 0 ? { bitrate: actualBitrate } : {}) }
+    : null
 }
 
 const kugou = async (track, request) => {
@@ -292,7 +298,10 @@ const kugou = async (track, request) => {
   const resolved = await json(request, trackerUrl, 'Kugou tracker')
   const url = String(Array.isArray(resolved?.url) ? resolved.url[0] || '' : '')
     .replace(/^http:/, 'https:')
-  return url ? { url, source: 'kugou', id: hash } : null
+  const actualBitrate = Number(match?.bitrate || match?.bit_rate)
+  return url
+    ? { url, source: 'kugou', id: hash, ...(actualBitrate > 0 ? { bitrate: actualBitrate } : {}) }
+    : null
 }
 
 const kuwo = async (track, request) => {
@@ -335,7 +344,7 @@ export async function resolveKumoneUnblock({ id = '', title = '', artist = '', d
   if (!keywordOf(track)) return null
   if (!skip.has('joox')) {
     try {
-      const direct = await joox(track, request, gdApi)
+      const direct = await joox(track, bitrate, request, gdApi)
       if (direct) return direct
     } catch {
       // Keep trying the provider-owned Kumone fallbacks.

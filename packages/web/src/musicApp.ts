@@ -4,8 +4,6 @@ import { isNative, viaProxy } from './core/native'
 import { t } from './core/i18n'
 import { syncNativeMedia, stopNativeMedia, onNativeControl } from './core/background'
 import { LyricLine, parseLyricResponse, currentLyricIndex, lyricsToText } from './core/lyrics'
-import { createLXKuwoPlugin } from './core/plugin/builtins'
-import { createKumonePlugin } from './core/plugin/kumone'
 import {
   DownloadedTrack, readDownloads, saveTrack, exportTrack, exportTextFile, deleteTrack, downloadKey,
 } from './core/downloads'
@@ -15,8 +13,8 @@ export const pluginManager = new PluginManager()
 
 /**
  * 匯入舊格式歌單時，沒記錄 platform 的曲目要掛在哪個音源名下。
- * 這是相容舊資料的後備字串；新安裝會先註冊內置 Kuwo 搜尋適配器，
- * 第三方解析仍由使用者自行導入的音源負責。
+ * 這是相容舊資料的後備字串。新安裝不預載任何音源，曲目必須來自使用者
+ * 在「設置」頁自行導入並啟用的插件。
  */
 export const FALLBACK_PLATFORM = 'WhyMusic'
 
@@ -44,9 +42,9 @@ const STORAGE_RECOMMEND_SOURCE = 'moumou-recommend-source'
 const STORAGE_QUALITY = 'musicfree-quality'
 
 /**
- * 音質，直接用 kbps 當值。上游（GD）實測支援五檔：128 / 192 / 320 / 740 / 999
- * —— 前三檔各自回不同大小的檔，740 與 999 都解到同一個無損檔（回報 br=986、
- * 約 33MB），所以最高兩檔是同一個來源。
+ * 音質保留 LX Music 常用的五檔值，讓舊版設定和第三方音源相容；顯示名稱則
+ * 使用實際音訊規格，而不是把 740 / 999 誤當成 kbps。不同音源支援的最高檔
+ * 不同，解析不到時由音源自行回退並回報實際 bitrate。
  *
  * 為什麼用數字而不是 low/standard/super 這種名稱：使用者想的是 kbps，而且名稱
  * 只能對應三檔、把上游的階梯壓扁了。這個值原樣傳給音源，由它決定怎麼用 ——
@@ -56,11 +54,11 @@ const STORAGE_QUALITY = 'musicfree-quality'
  */
 export type Quality = '128' | '192' | '320' | '740' | '999'
 export const QUALITIES: { value: Quality; label: string; hint: string }[] = [
-  { value: '128', label: '128 kbps', hint: '最省流量' },
-  { value: '192', label: '192 kbps', hint: '省流量' },
-  { value: '320', label: '320 kbps', hint: '標準，一般聽感已足夠' },
-  { value: '740', label: '740 kbps', hint: '高解析（實際取到無損）' },
-  { value: '999', label: '999 kbps', hint: '無損，檔案最大' },
+  { value: '128', label: '標準 · 128 kbps', hint: 'AAC/MP3，最省流量' },
+  { value: '192', label: '較高 · 192 kbps', hint: '更清晰，流量適中' },
+  { value: '320', label: '極高 · 320 kbps', hint: '高品質有損音訊' },
+  { value: '740', label: '無損 · FLAC', hint: '音源支援時使用無損，否則自動回退' },
+  { value: '999', label: 'Hi-Res · FLAC', hint: '高解析音訊，檔案最大，需音源支援' },
 ]
 const DEFAULT_QUALITY: Quality = '320'
 
@@ -143,7 +141,7 @@ export const RECOMMEND_CATEGORIES: { value: RecommendCategory; label: string }[]
   { value: 'western', label: '歐美' },
 ]
 
-/** 首頁可切換的實際音源。all 是 Moumusic 聚合，其餘選項來自已安裝插件。 */
+/** 首頁可切換的實際音源。所有選項都來自使用者已安裝且啟用的插件。 */
 export type RecommendSource = 'all' | string
 export type RecommendSourceOption = { value: RecommendSource; label: string }
 
@@ -405,13 +403,8 @@ const initPlugins = async () => {
   if (pluginsInitialized) return
   pluginsInitialized = true
 
-  // The release must be useful on a clean install. Kumone supplies the
-  // NetEase/GD search + fallback source for web and native builds; the LX-shaped
-  // Kuwo adapter keeps the standalone LX source workflow available as well.
-  pluginManager.registerPlugin(createKumonePlugin())
-  pluginManager.registerPlugin(createLXKuwoPlugin())
-
-  // 1) 先載入快取。第一次之後就能離線啟動，不必每次都等远程托管站
+  // 新安裝刻意保持零音源。這裡只載入使用者之前在設置頁導入的快取；
+  // 搜尋、推薦、播放和歌詞都只派發給這些插件，避免把任何平台偷偷打包進 App。
   const cached = readCachedPlugins()
   for (const p of cached) {
     try {
@@ -423,8 +416,7 @@ const initPlugins = async () => {
     }
   }
 
-  // 内置适配器已经在上面注册；第三方音源仍通过设置页 URL/本地文件导入，
-  // 装过一次就进 localStorage 快取，之后开启即载入。
+  // 使用者音源仍通過設置頁 URL／本地檔案導入，裝過一次就進 localStorage 快取。
   pluginsReady = true
 }
 
@@ -616,8 +608,10 @@ export function useMusicApp() {
   const [recommendSongs, setRecommendSongs] = useState<MusicItem[]>([])
 
   const recommendSources = useMemo<RecommendSourceOption[]>(() => {
-    const options: RecommendSourceOption[] = [{ value: 'all', label: 'Moumusic' }]
-    for (const plugin of pluginManager.getEnabledPlugins()) {
+    const options: RecommendSourceOption[] = []
+    const enabled = pluginManager.getEnabledPlugins()
+    if (enabled.length > 0) options.push({ value: 'all', label: '全部音源' })
+    for (const plugin of enabled) {
       if (options.some(option => option.value === plugin.name)) continue
       options.push({ value: plugin.name, label: recommendSourceLabel(plugin.name) })
     }

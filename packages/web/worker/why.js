@@ -437,12 +437,17 @@ async function searchWhyMusic(keyword, page = 1, count = 20) {
 
 async function getGdUrl(songId, source, bitrate = GD_BITRATE) {
   const data = await gdRequest('url', { source, id: songId, br: String(bitrate) })
-  return data?.url || ''
+  const url = String(data?.url || '').replace(/^http:/, 'https:')
+  const actualBitrate = Number(data?.br)
+  return url ? { url, ...(actualBitrate > 0 ? { bitrate: actualBitrate } : {}) } : null
 }
 
 /** 取單一子源的播放 URL：audiomack 走自家 OAuth，其餘經 GD 上游 */
 async function getWhySubSourceUrl(songId, source, bitrate = GD_BITRATE) {
-  if (source === AUDIOMACK_SOURCE) return await getAudiomackMedia(songId)
+  if (source === AUDIOMACK_SOURCE) {
+    const url = await getAudiomackMedia(songId)
+    return url ? { url } : null
+  }
   return await getGdUrl(songId, source, bitrate)
 }
 
@@ -461,7 +466,7 @@ async function resolveWhyMusicUrl({ id, source, bitrate, title, artist, duration
   if (id && !skip.has(primary)) {
     try {
       const direct = await getWhySubSourceUrl(id, primary, bitrate)
-      if (direct) return { url: direct, source: primary, id }
+      if (direct?.url) return { ...direct, source: primary, id }
     } catch (err) {
       console.error(`[why] url failed ${primary}/${id}: ${err.message}`)
     }
@@ -477,8 +482,8 @@ async function resolveWhyMusicUrl({ id, source, bitrate, title, artist, duration
       const list = await searchWhySubSource(candidateSource, keyword, 1, 5)
       for (const candidate of list.slice(0, 3)) {
         if (!candidate.id || !gdIsSameSong(candidate, { title, artist })) continue
-        const url = await getWhySubSourceUrl(candidate.id, candidateSource, bitrate)
-        if (url) return { url, source: candidateSource, id: candidate.id, matched: candidate }
+        const media = await getWhySubSourceUrl(candidate.id, candidateSource, bitrate)
+        if (media?.url) return { ...media, source: candidateSource, id: candidate.id, matched: candidate }
       }
     } catch (err) {
       console.error(`[why] fallback search failed on ${candidateSource}: ${err.message}`)

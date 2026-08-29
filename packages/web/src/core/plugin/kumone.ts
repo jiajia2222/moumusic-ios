@@ -11,10 +11,9 @@ import {
 /**
  * Kumone-compatible first-party source.
  *
- * The browser path uses the existing WhyMusic worker routes, which provide the
- * same NetEase encryption and provider fallback resolution that Kumone uses in
- * its native client. The standalone path uses the native transport bridge,
- * while the web path uses the WhyMusic worker routes.
+ * This module is kept as an optional compatibility adapter for deployments that
+ * explicitly wire it in. The app does not import or register it on startup;
+ * normal installs receive music only from user-imported sources.
  */
 
 const GD_API = 'https://music-api.gdstudio.xyz/api.php'
@@ -74,12 +73,6 @@ export function createKumonePlugin(): Plugin {
 
     async search(query, page = 1, type: SearchType = 'music') {
       if (type !== 'music') return { data: [], isEnd: true }
-      if (isNative() && typeof window !== 'undefined' && window.KumoneSource) {
-        const result = await window.KumoneSource.search({ query, page, limit: 30 })
-        const list = Array.isArray(result?.data) ? result.data : []
-        const data = list.map(raw => normalizeGdItem(raw, 'netease'))
-        return { data, isEnd: result?.isEnd ?? data.length < 30 }
-      }
       if (isNative()) {
         try {
           const songs = await searchKumoneNetease(query, page, 30, pluginFetch)
@@ -117,31 +110,15 @@ export function createKumonePlugin(): Plugin {
           exclude: Array.isArray(item._exclude) ? item._exclude.join(',') : '',
         })
         const result = await requestJson(`/api/why-url?${query.toString()}`)
-        if (text(result?.url)) return { url: result.url, source: result.source || source, quality }
+        if (text(result?.url)) return {
+          url: result.url,
+          source: result.source || source,
+          quality,
+          bitrate: Number(result.bitrate) > 0 ? Number(result.bitrate) : undefined,
+        }
         throw new Error('Kumone 没有返回可播放地址')
       }
 
-      if (typeof window !== 'undefined' && window.KumoneSource) {
-        try {
-          const native = await window.KumoneSource.media({
-            id: String(item.id || ''),
-            quality,
-            title: String(item.title || ''),
-            artist: String(item.artist || ''),
-            duration: Number(item.duration || 0),
-          })
-          if (text(native?.url)) {
-            return {
-              url: native.url!,
-              source: native.source || 'netease',
-              quality: native.quality || quality,
-              bitrate: native.bitrate,
-            }
-          }
-        } catch {
-          // Fall through to the shared provider fallback.
-        }
-      }
       const result = await resolveKumoneUnblock({
         id: source === 'netease' ? String(item.id || '') : '',
         title: String(item.title || ''),
@@ -151,7 +128,12 @@ export function createKumonePlugin(): Plugin {
         exclude: item._exclude,
       }, pluginFetch, GD_API)
       if (!result?.url) throw new Error('Kumone 没有返回可播放地址')
-      return { url: result.url, source: result.source, quality }
+      return {
+        url: result.url,
+        source: result.source,
+        quality,
+        bitrate: Number(result.bitrate) > 0 ? Number(result.bitrate) : undefined,
+      }
     },
 
     async getLyric(item) {
@@ -159,9 +141,6 @@ export function createKumonePlugin(): Plugin {
       const lyricId = String(item.lyricId || item.id || '')
       if (!isNative()) {
         return requestJson(`/api/why-lyric?id=${encodeURIComponent(lyricId)}&source=${encodeURIComponent(source)}`)
-      }
-      if (typeof window !== 'undefined' && window.KumoneSource) {
-        try { return await window.KumoneSource.lyric({ id: lyricId }) } catch { /* use GD fallback */ }
       }
       if (source === 'netease') {
         try { return await lyricKumoneNetease(lyricId, pluginFetch) } catch { /* use GD fallback */ }

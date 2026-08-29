@@ -61,10 +61,18 @@ test('the selected home source also limits search dispatch', () => {
   assert.match(app, /filter\(plugin\s*=>\s*searchSource === 'all' \|\| plugin\.name === searchSource,?\s*\)/)
 })
 
-test('the bundled Kumone source spans web backend and standalone iOS paths', () => {
+test('clean installs do not register a bundled source, while user sources stay compatible', () => {
   const app = read('packages/web/src/musicApp.ts')
+  const ui = read('packages/web/src/ui/AppleUI.tsx')
   const source = read('packages/web/src/core/plugin/kumone.ts')
-  assert.match(app, /createKumonePlugin/)
+  assert.doesNotMatch(app, /createKumonePlugin/)
+  assert.doesNotMatch(app, /createLXKuwoPlugin/)
+  assert.match(app, /readCachedPlugins/)
+  assert.match(ui, /首頁推薦/)
+  assert.match(ui, /switchRecommendSource/)
+  assert.match(ui, /switchRecommendCategory/)
+  assert.match(app, /標準 · 128 kbps/)
+  assert.match(app, /無損 · FLAC/)
   assert.match(source, /Kumone \/ NetEase/)
   assert.match(source, /\/api\/why-search/)
   assert.match(source, /\/api\/why-url/)

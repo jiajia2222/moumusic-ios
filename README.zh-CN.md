@@ -6,11 +6,11 @@ Moumusic 是由 moumou 打造的轻量音乐播放器，可在浏览器和 iOS A
 
 ## 功能
 
-- 首页可以切换已安装的音源平台；全新安装默认提供 Kumone / NetEase 音源与 LX Music / Kuwo 适配器。
-- 支持 LX Music User API 和 MusicFree 兼容音源导入；User API 可通过网址或本地 `.js` 文件安装，应用不会捆绑第三方音源脚本。
-- 支持 128、192、320、740 和 999 kbps 等音质档位，可按音源能力获取高解析或无损音质。
+- 首页采用 Kumone 风格的深色红黑界面、封面卡片、浮动播放器和沉浸式歌词；音源切换与首页推荐分类统一放在“设置”。
+- 全新安装不注册任何内置音源；支持用户从网址或本地 `.js` 文件导入 LX Music User API 和 MusicFree 兼容音源。
+- 支持标准 128、较高 192、极高 320、无损 FLAC 和 Hi-Res FLAC，按所选音源能力请求并显示实际可用规格。
 - 支持 LRC、翻译歌词及 LX/Kumone 风格 YRC 逐字歌词解析；全屏歌词会显示翻译，iOS Live Activity / Dynamic Island 会同步当前歌词。
-- 支持 Kumone 风格的网易云/GD 多源搜索、解灰与回退；也支持网易云热歌榜等官方榜单。
+- 前端不绑定任何平台；推荐、搜索、播放和歌词都只派发给用户已启用的音源。
 
 ## iOS 播放体验
 
@@ -18,7 +18,7 @@ iOS 原生版本支持后台播放，并向锁定画面和控制中心提供封�
 
 ## 音源机制
 
-项目与第三方音源脚本分离。应用内置 Kumone / NetEase 音源：网页端使用后端的搜索、歌词、封面、GD 多源解灰接口，iOS 端在没有后端时通过原生 URLSession 直连同一套解析链路；另有 LX Music / Kuwo 适配器。也可以在“设置”中安装你有权使用的 LX User API（网址或本地 `.js` 文件）。LX User API 常见的 `musicUrl`、`lyric`、`pic`、`name`、`singer`、`interval` 等字段已做兼容。
+项目与第三方音源脚本分离。应用启动时不会注册 Kumone、LX、Kuwo 或其他平台音源；所有搜索、播放地址、歌词和封面能力都来自用户在“设置”中导入并启用的插件。LX User API 常见的 `musicUrl`、`lyric`、`pic`、`name`、`singer`、`interval` 等字段已做兼容。
 
 歌词显示采用 Kumone 的分层歌词思路：原文、翻译/罗马音和逐字时间轴在同一条播放时间线上合并。音源适配器按 Kumone 的 NetEase/GD 回退顺序实现，保留现有 Web 前端、Cloudflare/Node 后端和 iOS 壳，以便同时兼容 LX User API 与旧版 CommonJS/MusicFree 音源。
 

@@ -33,11 +33,6 @@ declare global {
         responseType?: 'text' | 'base64'
       }): Promise<{ status: number; data?: unknown; headers?: Record<string, string> }>
     }
-    KumoneSource?: {
-      search(options: { query: string; page?: number; limit?: number }): Promise<{ data?: unknown[]; isEnd?: boolean }>
-      media(options: { id: string; quality?: string; title?: string; artist?: string; duration?: number }): Promise<{ url?: string; source?: string; quality?: string; bitrate?: number }>
-      lyric(options: { id: string }): Promise<Record<string, unknown>>
-    }
     __WHYMUSIC_NATIVE__?: boolean
   }
 }
@@ -83,7 +78,4 @@ import { registerPlugin } from '@capacitor/core'
  */
 if (isNative() && typeof window !== 'undefined') {
   window.MoumusicHttp = registerPlugin('MoumusicHttp') as Window['MoumusicHttp']
-}
-if (isIOSNative() && typeof window !== 'undefined') {
-  window.KumoneSource = registerPlugin('KumoneSource') as Window['KumoneSource']
 }

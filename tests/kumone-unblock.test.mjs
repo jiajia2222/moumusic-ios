@@ -57,6 +57,7 @@ test('standalone fallback resolves the legacy GD Joox source too', async () => {
     url: 'https://cdn.example.test/joox.mp3',
     source: 'joox',
     id: 'joox-id',
+    bitrate: 320,
   })
 })
 

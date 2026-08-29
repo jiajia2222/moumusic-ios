@@ -38,23 +38,13 @@ test('iOS registers the native HTTP bridge used by LX User APIs', () => {
   assert.match(plugin, /URLSession\.shared\.dataTask/)
 })
 
-test('iOS exposes the native Kumone NetEase source path', () => {
+test('iOS does not ship a bundled Kumone music source bridge', () => {
   const controller = read('ios/App/App/NativeBridgeViewController.swift')
-  const plugin = read('ios/App/App/KumoneSourcePlugin.swift')
-  const crypto = read('ios/App/App/KumoneNeteaseCrypto.swift')
-  const client = read('ios/App/App/KumoneNeteaseClient.swift')
   const project = read('ios/App/App.xcodeproj/project.pbxproj')
-  assert.match(controller, /registerPluginInstance\(KumoneSourcePlugin\(\)\)/)
-  assert.match(plugin, /jsName = "KumoneSource"/)
-  assert.match(plugin, /KumoneNeteaseClient\.search/)
-  assert.match(plugin, /KumoneNeteaseClient\.media/)
-  assert.match(plugin, /KumoneNeteaseClient\.lyric/)
-  assert.match(crypto, /weapiPresetKey/)
-  assert.match(crypto, /eapiKey/)
-  assert.match(client, /\/cloudsearch\/pc/)
-  assert.match(client, /\/song\/enhance\/player\/url\/v1/)
-  assert.match(client, /\/song\/lyric\/v1/)
-  assert.match(project, /KumoneSourcePlugin\.swift in Sources/)
+  const native = read('packages/web/src/core/native.ts')
+  assert.doesNotMatch(controller, /KumoneSourcePlugin/)
+  assert.doesNotMatch(project, /KumoneSourcePlugin|KumoneNeteaseClient|KumoneNeteaseCrypto/)
+  assert.doesNotMatch(native, /KumoneSource/)
 })
 
 test('iOS declares Live Activities and embeds the Dynamic Island widget target', () => {
