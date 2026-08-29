@@ -1,5 +1,6 @@
 import { Plugin } from '../types'
-import { isNative } from '../native'
+import { isNative, viaProxy } from '../native'
+import { isLXUserApiCode, loadLXUserApi } from './lxUserApi'
 
 /**
  * 插件執行環境。
@@ -12,8 +13,9 @@ import { isNative } from '../native'
  * 沙箱刻意很小：插件要什麼自己用 `fetch` 去拿。曾經為了讓某個生態的現成插件能跑，
  * 這裡塞過 axios / crypto-js / dayjs / qs / he / big-integer / cheerio 七個 shim，
  * 還有一份「哪些網域要走代理」的清單。那些東西沒有一個是本專案的音源用得到的
- * （`plugins/whymusic.js` 只用原生 fetch），全部移除 —— 少一層猜測，插件行為就少一個
- * 說不清楚的地方。要代理的插件自己打 `/api/proxy`，那是明講的，不是我們替它決定的。
+ * 第三方插件只使用明确提供的能力，插件行为就少一层说不清楚的地方；LX User API
+ * 则由专用适配器提供生命周期与请求桥接。要代理的插件自己打 `/api/proxy`，那是
+ * 明讲的，不是我们替它决定的。
  */
 
 /**
@@ -107,7 +109,7 @@ export function adaptPluginDefinition(raw: any): Plugin {
  * 回傳一個只做到插件實際會用的部分的 Response 形狀（status/ok/text/json）——
  * 假裝實作完整的 Response 只會在別的地方騙人。
  */
-async function pluginFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function pluginFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(input, init)
   } catch (err) {
@@ -115,28 +117,39 @@ async function pluginFetch(input: RequestInfo | URL, init?: RequestInit): Promis
     const url = String(typeof input === 'string' ? input : (input as Request).url ?? input)
     // 相對路徑在 App 版指向不存在的本站後端，救不了也不該救
     if (!/^https?:\/\//i.test(url)) throw err
-    const http = (window as any).Capacitor?.Plugins?.CapacitorHttp
+    // Keep the old CapacitorHttp escape hatch for Android builds; iOS uses the
+    // project-owned URLSession bridge registered in NativeBridgeViewController.
+    const http = (window as any).MoumusicHttp
+      || (window as any).Capacitor?.Plugins?.CapacitorHttp
     if (!http?.request) throw err
     console.warn('[plugin] 直連失敗，改用原生 HTTP：' + url.slice(0, 80))
+    const binary = !!(init as any)?.__moumusicBinary
     const res = await http.request({
       url,
       method: (init?.method || 'GET').toUpperCase(),
       headers: (init?.headers as Record<string, string>) || undefined,
       data: init?.body,
+      responseType: binary ? 'base64' : 'text',
     })
     // 原生層可能已經把 JSON 解好了，也可能回字串 —— 兩種都要能給出文字
-    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data ?? '')
+    const encoded = typeof res.data === 'string' ? res.data : JSON.stringify(res.data ?? '')
+    const bytes = binary ? Uint8Array.from(atob(encoded), char => char.charCodeAt(0)) : null
+    const text = binary ? new TextDecoder().decode(bytes as Uint8Array) : encoded
     return {
       ok: res.status >= 200 && res.status < 300,
       status: res.status,
+      headers: new Headers(res.headers || {}),
       text: async () => text,
       json: async () => (typeof res.data === 'string' ? JSON.parse(res.data) : res.data),
+      arrayBuffer: async () => (bytes || new TextEncoder().encode(text)).buffer,
     } as Response
   }
 }
 
 export class PluginRunner {
   static load(code: string): Plugin {
+    if (isLXUserApiCode(code)) return loadLXUserApi(code, pluginFetch)
+
     const sandbox = {
       module: { exports: {} },
       exports: {},
@@ -168,7 +181,7 @@ export class PluginRunner {
   }
 
   static async loadFromURL(url: string): Promise<Plugin> {
-    const response = await fetch(url)
+    const response = await pluginFetch(viaProxy(url), { cache: 'no-store' })
     if (!response.ok) throw new Error(`Failed to fetch plugin: ${url}`)
     const code = await response.text()
     return this.load(code)

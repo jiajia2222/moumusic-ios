@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Player, PluginManager, MusicItem, SearchType } from './core'
+import { Player, PluginManager, MusicItem, SearchType, pluginFetch } from './core'
 import { isNative, viaProxy } from './core/native'
 import { t } from './core/i18n'
 import { syncNativeMedia, stopNativeMedia, onNativeControl } from './core/background'
-import { LyricLine, parseLrc, currentLyricIndex, lyricsToText } from './core/lyrics'
+import { LyricLine, parseLyricResponse, currentLyricIndex, lyricsToText } from './core/lyrics'
+import { createLXKuwoPlugin } from './core/plugin/builtins'
+import { createKumonePlugin } from './core/plugin/kumone'
 import {
   DownloadedTrack, readDownloads, saveTrack, exportTrack, exportTextFile, deleteTrack, downloadKey,
 } from './core/downloads'
@@ -12,21 +14,9 @@ const player = new Player()
 export const pluginManager = new PluginManager()
 
 /**
- * 官方音源插件：不打包進 app，改由 URL 安裝，但那個 URL 是**本站自己的**
- * /plugins/whymusic.js（後端從 repo 的 plugins/ 直接供應）。
- *
- * 為什麼不是 GitHub raw：執行時不該依賴 GitHub。先前指向 raw.githubusercontent.com
- * 造成兩個實際故障 —— 使用者網路連不到 GitHub 時整站沒有音源（瀏覽器層
- * Failed to fetch），以及 GitHub 的 max-age=300 CDN 快取讓「重新載入」抓回舊碼。
- * 改成同源後兩者都不存在，也不必再經 /api/proxy 繞道。
- * GitHub 仍是這支插件在版控裡的位置，但只在部署時參與，不在執行時。
- *
- * 插件呼叫本站後端的 /api/why-* 端點（子音源扇出、OAuth 簽名、跨源救援都在
- * 後端），所以它是為這個播放器寫的，貼到別的客戶端不一定能動。
- */
-/**
  * 匯入舊格式歌單時，沒記錄 platform 的曲目要掛在哪個音源名下。
- * 這只是個後備字串，不代表本專案隨附任何音源 —— 產物裡沒有任何音源檔。
+ * 這是相容舊資料的後備字串；新安裝會先註冊內置 Kuwo 搜尋適配器，
+ * 第三方解析仍由使用者自行導入的音源負責。
  */
 export const FALLBACK_PLATFORM = 'WhyMusic'
 
@@ -131,7 +121,7 @@ const pickRecommendWindow = (
  * 不必在畫面上多一行按鈕、也不必多抓一次上游。
  *
  * 名稱只是傳給音源插件的字串，實際對應哪份榜單、怎麼排由插件與後端決定
- * （見 plugins/whymusic.js 與 worker/why.js 的 CATEGORIES）—— 換榜單不必動前端。
+ * （見 worker/why.js 的 CATEGORIES）—— 換榜單不必動前端。
  *
  * 粵語是預設：這個 app 主要在聽港樂，而粵語曲庫在各家榜單裡本來就是少數，
  * 混進「中文」只會被國語歌淹掉，所以它自己一欄。
@@ -377,8 +367,8 @@ const writeCachedPlugin = (name: string, code: string, enabled = true) => {
 /**
  * 從 URL 取插件原始碼。
  *
- * 同源 URL（官方音源 /plugins/*.js）直接抓：沒有 CORS 問題，也不必經代理。
- * 外部 URL（使用者自行安裝的第三方插件）才走 /api/proxy 由後端代抓 —— 讓
+ * 同源 URL 直接抓：沒有 CORS 問題，也不必經代理。外部 URL（使用者自行安裝的
+ * 第三方插件）走 /api/proxy 由後端代抓 —— 讓
  * 瀏覽器直連第三方託管站，等於要求每個使用者的網路都連得到那個站，而
  * raw.githubusercontent.com 這類站點在部分地區並不穩定，失敗時是瀏覽器層的
  * `Failed to fetch`，連狀態碼都拿不到。
@@ -391,12 +381,13 @@ const fetchPluginCode = async (url: string, bustCache = false): Promise<string> 
     : url
   // 原生 App 沒有後端可代抓，直接抓第三方插件 URL（WebView 允許跨域）
   const request = viaProxy(target)
-  const response = await fetch(request, { cache: 'no-store' })
+  const response = await pluginFetch(request, { cache: 'no-store' })
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
   const code = await response.text()
   if (!code.trim()) throw new Error(t('回應為空'))
   // 代理把上游錯誤也當內容回傳，這裡確認真的是插件碼而不是錯誤頁
-  if (!code.includes('module.exports') && !code.includes('exports.')) {
+  if (!code.includes('module.exports') && !code.includes('exports.')
+    && !/\blx\.send\s*\(|\bEVENT_NAMES\.inited\b|\bon\s*\(\s*EVENT_NAMES\.request/.test(code)) {
     throw new Error(t('回應不是插件代碼（可能是上游錯誤頁）'))
   }
   return code
@@ -414,7 +405,13 @@ const initPlugins = async () => {
   if (pluginsInitialized) return
   pluginsInitialized = true
 
-  // 1) 先載入快取。第一次之後就能離線啟動，不必每次都等 GitHub
+  // The release must be useful on a clean install. Kumone supplies the
+  // NetEase/GD search + fallback source for web and native builds; the LX-shaped
+  // Kuwo adapter keeps the standalone LX source workflow available as well.
+  pluginManager.registerPlugin(createKumonePlugin())
+  pluginManager.registerPlugin(createLXKuwoPlugin())
+
+  // 1) 先載入快取。第一次之後就能離線啟動，不必每次都等远程托管站
   const cached = readCachedPlugins()
   for (const p of cached) {
     try {
@@ -426,13 +423,9 @@ const initPlugins = async () => {
     }
   }
 
-  // 預設不附音源：不在這裡自動安裝任何插件。使用者到插件頁自行匯入
-  // （內置音源列在那裡可一鍵安裝，也可貼任意第三方插件 URL）。
-  // 裝過一次就進 localStorage 快取，之後開啟即載入。
+  // 内置适配器已经在上面注册；第三方音源仍通过设置页 URL/本地文件导入，
+  // 装过一次就进 localStorage 快取，之后开启即载入。
   pluginsReady = true
-
-  // 這裡刻意不自動去抓任何音源。app 不隨附音源，也不知道任何音源的位址 ——
-  // 使用者裝過的那份存在 localStorage，要換版就自己重貼一次網址。
 }
 
 
@@ -803,7 +796,7 @@ export function useMusicApp() {
       try {
         const plugin = pluginManager.getPlugin(playingItem.platform || '')
         const raw = plugin ? await pluginManager.getLyric(plugin, playingItem) : ''
-        if (!cancelled) setLyricLines(parseLrc(raw))
+        if (!cancelled) setLyricLines(parseLyricResponse(raw))
       } catch (e) {
         // 沒詞就是沒詞，不必吵
         console.warn('[lyric] 取歌詞失敗:', e)
@@ -821,6 +814,10 @@ export function useMusicApp() {
     () => currentLyricIndex(lyricLines, currentTime),
     [lyricLines, currentTime],
   )
+  const currentLyric = lyricLines[lyricIndex]
+  const currentLyricText = currentLyric
+    ? [currentLyric.text, currentLyric.translation || currentLyric.romaji].filter(Boolean).join('\n')
+    : ''
 
   /** 複製完整歌詞（純文字，不含時間戳與製作人員名單） */
   const copyLyrics = async () => {
@@ -917,13 +914,13 @@ export function useMusicApp() {
       artist: playingItem.artist || '',
       album: playingItem.album || 'Moumusic',
       artworkUrl: playingItem.artwork || playingItem.cover || '',
-      lyric: lyricLines[lyricIndex]?.text || '',
+      lyric: currentLyricText,
       lyricIndex,
       playing: isPlaying,
       positionSec: currentTimeRef.current,
       durationSec: Number.isFinite(duration) ? duration : 0,
     })
-  }, [playingItem, isPlaying, duration, lyricIndex, lyricLines])
+  }, [playingItem, isPlaying, duration, lyricIndex, lyricLines, currentLyricText])
 
   useEffect(() => {
     if (!isNative()) return
@@ -1377,7 +1374,7 @@ export function useMusicApp() {
         title: playingItem.title || '', artist: playingItem.artist || '',
         album: playingItem.album || 'Moumusic',
         artworkUrl: playingItem.artwork || playingItem.cover || '',
-        lyric: lyricLines[lyricIndex]?.text || '', lyricIndex,
+        lyric: currentLyricText, lyricIndex,
         playing: isPlaying, positionSec: target,
         durationSec: Number.isFinite(duration) ? duration : 0,
       })
@@ -1829,10 +1826,9 @@ export function useMusicApp() {
     }
     try {
       setLoading(true)
-      // 與官方插件走同一條路：經後端代抓 + 換快取鍵，避免瀏覽器直連不到
+      // 外部音源走同一條路：經後端代抓 + 換快取鍵，避免瀏覽器直連不到
       // 插件託管站（Failed to fetch），也避免抓回 CDN 的過期副本
       const code = await fetchPluginCode(url, true)
-      // 名稱優先用插件自己宣告的 platform，輸入框留空也能裝
       const registered = loadPluginCode(code, pluginName.trim() || undefined)
       savePluginCode(registered, code)
       setPluginToggles(prev => ({ ...prev, [registered]: true }))
@@ -1844,6 +1840,31 @@ export function useMusicApp() {
     } catch (e: any) {
       // 原本只說「插件安裝失敗」，看不出是網路不通、URL 錯還是代碼有問題
       console.error('Install error:', e)
+      showNotification(t('插件安裝失敗：{msg}', { msg: e?.message || e }), 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const installPluginFromFile = async (file: File) => {
+    try {
+      setLoading(true)
+      const code = await file.text()
+      if (!code.trim()) throw new Error(t('回應為空'))
+      if (!code.includes('module.exports') && !code.includes('exports.')
+        && !/\blx\.send\s*\(|\bEVENT_NAMES\.inited\b|\bon\s*\(\s*EVENT_NAMES\.request/.test(code)) {
+        throw new Error(t('回應不是插件代碼（可能是上游錯誤頁）'))
+      }
+      const registered = loadPluginCode(code, pluginName.trim() || file.name.replace(/\.js$/i, ''))
+      savePluginCode(registered, code)
+      setPluginToggles(prev => ({ ...prev, [registered]: true }))
+      setPluginKey(k => k + 1)
+      setPluginUrl('')
+      setPluginName('')
+      savePluginsToStorage()
+      showNotification(t('插件「{name}」已安裝', { name: registered }), 'success')
+    } catch (e: any) {
+      console.error('Install file error:', e)
       showNotification(t('插件安裝失敗：{msg}', { msg: e?.message || e }), 'error')
     } finally {
       setLoading(false)
@@ -1890,7 +1911,7 @@ export function useMusicApp() {
   const savePluginsToStorage = () => {
     try {
       const pluginCodes: Record<string, string> = JSON.parse(localStorage.getItem('musicfree-plugin-codes') || '{}')
-      const pluginData = pluginManager.getPlugins().map(p => ({
+      const pluginData = pluginManager.getPlugins().filter(p => !p.instance?.builtin).map(p => ({
         name: p.name,
         code: pluginCodes[p.name] || '',   // 直接存原始 code，不再 JSON 編碼
         enabled: pluginManager.isPluginEnabled(p.name)
@@ -2019,6 +2040,7 @@ export function useMusicApp() {
     handleSearchSubmit,
     hasMore,
     installPluginFromURL,
+    installPluginFromFile,
     isPlaying,
     keyword,
     loadAlbumTracks,

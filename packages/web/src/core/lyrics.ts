@@ -16,7 +16,14 @@
  *    要展開成多筆，否則第二次唱到時不會高亮。
  */
 
-export type LyricLine = { time: number; text: string }
+export type LyricWord = { text: string; start: number; duration: number }
+export type LyricLine = {
+  time: number
+  text: string
+  translation?: string
+  romaji?: string
+  words?: LyricWord[]
+}
 
 /** `[mm:ss.xx]` / `[mm:ss:xx]` / `[mm:ss]`，小數位 1~3 位都見過 */
 const TAG = /\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g
@@ -61,6 +68,100 @@ export function parseLrc(raw: string): LyricLine[] {
   return out
 }
 
+const WORD_TAG_BEFORE = /\((\-?\d+)\s*,\s*(\-?\d+)(?:\s*,[^)]*)?\)/g
+const WORD_TAG_AFTER = /<(\-?\d+)\s*,\s*(\-?\d+)(?:\s*,[^>]*)?>/g
+const YRC_LINE = /^\s*\[(\-?\d+)\s*,\s*(\-?\d+)\](.*)$/
+const LX_LRC_LINE = /^\s*\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\](.*)$/
+
+/**
+ * Parse LX/Kumone-style word timed lyric lines. LX returns both
+ * `[startMs,durationMs](offset,duration,0)word` and the transformed
+ * `[mm:ss.xx]word<offset,duration>word` form.
+ */
+export function parseYrc(raw: string): LyricLine[] {
+  const lines: LyricLine[] = []
+  for (const rawLine of String(raw || '').split(/\r?\n/)) {
+    const yrcMatch = rawLine.match(YRC_LINE)
+    const lrcMatch = yrcMatch ? null : rawLine.match(LX_LRC_LINE)
+    if (!yrcMatch && !lrcMatch) continue
+    const time = yrcMatch
+      ? Number(yrcMatch[1]) / 1000
+      : Number(lrcMatch![1]) * 60 + Number(lrcMatch![2]) + Number(`0.${lrcMatch![3] || 0}`)
+    const words: LyricWord[] = []
+    const body = yrcMatch ? yrcMatch[3] : lrcMatch![4]
+    const afterTags: RegExpExecArray[] = []
+    WORD_TAG_AFTER.lastIndex = 0
+    let tag: RegExpExecArray | null
+    while ((tag = WORD_TAG_AFTER.exec(body)) !== null) afterTags.push(tag)
+
+    if (afterTags.length > 0) {
+      // LX's transformed lyric places each word before its timing marker:
+      // `word<start,duration>word<start,duration>`.
+      let cursor = 0
+      for (const current of afterTags) {
+        const text = body.slice(cursor, current.index)
+        if (text.trim()) words.push({
+          text,
+          start: time + Math.max(0, Number(current[1])) / 1000,
+          duration: Math.max(0, Number(current[2])) / 1000,
+        })
+        cursor = current.index + current[0].length
+      }
+    } else {
+      const beforeTags: RegExpExecArray[] = []
+      WORD_TAG_BEFORE.lastIndex = 0
+      while ((tag = WORD_TAG_BEFORE.exec(body)) !== null) beforeTags.push(tag)
+      for (let i = 0; i < beforeTags.length; i++) {
+        const current = beforeTags[i]
+        const next = beforeTags[i + 1]
+        // Some YRC producers put each timing marker immediately before its word.
+        const text = body.slice(current.index + current[0].length, next?.index ?? body.length)
+        if (text.trim()) words.push({
+          text,
+          start: time + Math.max(0, Number(current[1])) / 1000,
+          duration: Math.max(0, Number(current[2])) / 1000,
+        })
+      }
+    }
+    const lineText = words.map(word => word.text).join('').trim()
+    if (lineText) lines.push({ time, text: lineText, words })
+  }
+  return lines.sort((a, b) => a.time - b.time)
+}
+
+const lyricText = (value: unknown): string => typeof value === 'string' ? value : ''
+
+const mergeTimedLines = (lines: LyricLine[], extra: LyricLine[], field: 'translation' | 'romaji') => {
+  if (lines.length === 0 || extra.length === 0) return lines
+  let cursor = 0
+  for (const line of lines) {
+    while (cursor + 1 < extra.length && extra[cursor + 1].time <= line.time + 0.35) cursor++
+    const candidate = extra[cursor]
+    if (candidate && Math.abs(candidate.time - line.time) <= 0.35 && candidate.text !== line.text) {
+      line[field] = candidate.text
+    }
+  }
+  return lines
+}
+
+/**
+ * Normalize the response shapes used by Moumusic, LX Music and Kumone.
+ * LX returns lyric/tlyric/rlyric/lxlyric while Kumone exposes LRC/YRC as
+ * separate parsed layers. The app keeps one timeline and attaches translated
+ * or word-timed data to the matching original line.
+ */
+export function parseLyricResponse(raw: unknown): LyricLine[] {
+  if (typeof raw === 'string') return parseLrc(raw)
+  if (!raw || typeof raw !== 'object') return []
+  const value = raw as Record<string, unknown>
+  const original = lyricText(value.lyric || value.lrc || value.rawLrc)
+  const yrc = parseYrc(lyricText(value.yrc || value.lxlyric))
+  const lines = yrc.length > 0 ? yrc : parseLrc(original)
+  mergeTimedLines(lines, parseLrc(lyricText(value.tlyric)), 'translation')
+  mergeTimedLines(lines, parseLrc(lyricText(value.rlyric || value.romalrc || value.yromalrc)), 'romaji')
+  return lines
+}
+
 /**
  * 目前該高亮第幾行。回 -1 表示還沒到第一句（前奏）。
  *
@@ -86,5 +187,5 @@ export function currentLyricIndex(lines: LyricLine[], time: number): number {
  * 給程式看的標記，也不該帶製作人員名單。
  */
 export function lyricsToText(lines: LyricLine[]): string {
-  return lines.map(l => l.text).join('\n')
+  return lines.map(l => l.translation ? `${l.text}\n${l.translation}` : l.text).join('\n')
 }

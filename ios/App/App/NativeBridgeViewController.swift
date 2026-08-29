@@ -10,5 +10,7 @@ import Capacitor
 final class NativeBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(BackgroundPlaybackPlugin())
+        bridge?.registerPluginInstance(MoumusicHttpPlugin())
+        bridge?.registerPluginInstance(KumoneSourcePlugin())
     }
 }

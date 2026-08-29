@@ -22,9 +22,11 @@
 
 > **前端與後端本身不需要任何金鑰或環境變數。** 音源要不要金鑰是那個音源的事。
 
-**所有方式部署完成後，都要先到「設置」頁安裝音源。** 這個專案**不隨附音源**，
-產物與 repo 裡都沒有任何音源檔 —— 播放器不預設任何來源，音源要用哪一個由你提供。
-到「設置」頁貼上你自己的音源網址（要能被瀏覽器抓到：同源、或對方送 CORS 標頭）。
+部署完成後可直接使用内置的 Kumone / NetEase 音源，以及 LX/Kuwo 搜索适配器。Kumone
+音源的网页前端调用 `/api/why-search`、`/api/why-url`、`/api/why-lyric` 与 `/api/why-pic`，
+后端负责 GD 多源搜索、解灰、重试与缓存；iOS App 则在没有后端时使用原生 URLSession
+直连同一解析链路。第三方 LX 音源脚本不会写入产物；如需覆盖某个来源，请到「设置」页
+导入你有权使用的 LX User API（网址或本地 `.js` 文件）。
 
 ---
 
@@ -54,7 +56,7 @@ pnpm deploy:cf
 ```
 
 這一個指令做完三件事：編譯前端 → 把 API 打包成 `dist/_worker.js` → 上傳。
-（不含音源 —— 產物裡不會有任何音源檔。）
+（不含第三方音源脚本；内置的只是搜索与协议适配代码。）
 
 完成後開啟 `https://<專案名>.pages.dev`。
 
@@ -227,18 +229,18 @@ docker run -d -p 8788:8788 -e HOST=0.0.0.0 --name whymusic whymusic
 
 ## 常見問題
 
-**Q: 開站後搜尋顯示「搜尋需要音源」？**
-A: 正常 —— 這個專案不隨附音源。到「設置」頁貼上你自己的音源網址並按「安裝」。
-裝過一次會存進 localStorage，之後開啟自動載入。
+**Q: 内置 Kumone / NetEase 或 Kuwo 搜索能搜到歌，但播放失败？**
+A: Kumone / NetEase 音源会先使用后端或 iOS 原生桥做 GD 多源解析；LX/Kuwo 结果也会
+按 `kw` 源交给已导入的 LX User API 处理 `musicUrl / lyric / pic`。导入后会保存在
+localStorage，之后打开会自动载入。
 
 **Q: 所有 `/api/*` 都回 HTML，首頁卻正常？**
 A: `_worker.js` 沒被部署（CF）或 API 路由沒生效。CF 版請確認用的是
 `pnpm build:cf` 而非 `pnpm build`。
 
 **Q: 音源網址裝不上，說「回應不是插件代碼」？**
-A: 那個網址沒有回傳插件原始碼。常見原因：路徑不存在（伺服器把它當前端路由、
-回了 index.html），或對方站點沒送 CORS 標頭。確認該網址用瀏覽器直接開會看到
-JS 原始碼。
+A: 现在同时兼容 CommonJS/MusicFree 和 LX User API。确认网址返回的是 JS 原始码，
+或直接在「设置」页选择本地 `.js` 文件；如果是网页 HTML、JSON 配置或失效链接，安装会被拒绝。
 
 **Q: 換版後看到的還是舊介面／舊行為？**
 A: 硬重載一次。API 回應已帶 `Cache-Control: no-store`，前端資源檔名帶內容雜湊，

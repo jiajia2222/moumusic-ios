@@ -11,6 +11,10 @@
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		9F5C10010000000000000001 /* BackgroundPlaybackPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11010000000000000001 /* BackgroundPlaybackPlugin.swift */; };
 		9F5C10020000000000000002 /* NativeBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11020000000000000002 /* NativeBridgeViewController.swift */; };
+		9F5C10070000000000000007 /* MoumusicHttpPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11060000000000000006 /* MoumusicHttpPlugin.swift */; };
+		9F5C10080000000000000008 /* KumoneNeteaseCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11070000000000000007 /* KumoneNeteaseCrypto.swift */; };
+		9F5C10090000000000000009 /* KumoneNeteaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11080000000000000008 /* KumoneNeteaseClient.swift */; };
+		9F5C10100000000000000010 /* KumoneSourcePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11090000000000000009 /* KumoneSourcePlugin.swift */; };
 		9F5C10030000000000000003 /* MoumouLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11030000000000000003 /* MoumouLiveActivityAttributes.swift */; };
 		9F5C10040000000000000004 /* MoumouLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11040000000000000004 /* MoumouLiveActivityWidget.swift */; };
 		9F5C10050000000000000005 /* MoumouLiveActivityAttributes.swift in Widget Sources */ = {isa = PBXBuildFile; fileRef = 9F5C11030000000000000003 /* MoumouLiveActivityAttributes.swift */; };
@@ -41,6 +45,10 @@
 		9F5C11030000000000000003 /* MoumouLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoumouLiveActivityAttributes.swift; sourceTree = "<group>"; };
 		9F5C11040000000000000004 /* MoumouLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoumouLiveActivityWidget.swift; sourceTree = "<group>"; };
 		9F5C11050000000000000005 /* Widget Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9F5C11060000000000000006 /* MoumusicHttpPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoumusicHttpPlugin.swift; sourceTree = "<group>"; };
+		9F5C11070000000000000007 /* KumoneNeteaseCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KumoneNeteaseCrypto.swift; sourceTree = "<group>"; };
+		9F5C11080000000000000008 /* KumoneNeteaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KumoneNeteaseClient.swift; sourceTree = "<group>"; };
+		9F5C11090000000000000009 /* KumoneSourcePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KumoneSourcePlugin.swift; sourceTree = "<group>"; };
 		9F5C12010000000000000001 /* MoumouLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = MoumouLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -95,6 +103,10 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				9F5C11020000000000000002 /* NativeBridgeViewController.swift */,
 				9F5C11010000000000000001 /* BackgroundPlaybackPlugin.swift */,
+				9F5C11060000000000000006 /* MoumusicHttpPlugin.swift */,
+				9F5C11070000000000000007 /* KumoneNeteaseCrypto.swift */,
+				9F5C11080000000000000008 /* KumoneNeteaseClient.swift */,
+				9F5C11090000000000000009 /* KumoneSourcePlugin.swift */,
 				9F5C11030000000000000003 /* MoumouLiveActivityAttributes.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
@@ -241,6 +253,10 @@
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				9F5C10010000000000000001 /* BackgroundPlaybackPlugin.swift in Sources */,
 				9F5C10020000000000000002 /* NativeBridgeViewController.swift in Sources */,
+				9F5C10070000000000000007 /* MoumusicHttpPlugin.swift in Sources */,
+				9F5C10080000000000000008 /* KumoneNeteaseCrypto.swift in Sources */,
+				9F5C10090000000000000009 /* KumoneNeteaseClient.swift in Sources */,
+				9F5C10100000000000000010 /* KumoneSourcePlugin.swift in Sources */,
 				9F5C10030000000000000003 /* MoumouLiveActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -405,14 +421,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11016;
+				CURRENT_PROJECT_VERSION = 11017;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.16;
+				MARKETING_VERSION = 1.10.17;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -427,14 +443,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11016;
+				CURRENT_PROJECT_VERSION = 11017;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10.16;
+				MARKETING_VERSION = 1.10.17;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -448,11 +464,11 @@
 			buildSettings = {
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 11016;
+				CURRENT_PROJECT_VERSION = 11017;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MoumouLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
-				MARKETING_VERSION = 1.10.16;
+				MARKETING_VERSION = 1.10.17;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app.liveactivity;
 				PRODUCT_NAME = MoumouLiveActivity;
 				SKIP_INSTALL = YES;
@@ -466,11 +482,11 @@
 			buildSettings = {
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 11016;
+				CURRENT_PROJECT_VERSION = 11017;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MoumouLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
-				MARKETING_VERSION = 1.10.16;
+				MARKETING_VERSION = 1.10.17;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.whymusic.app.liveactivity;
 				PRODUCT_NAME = MoumouLiveActivity;
 				SKIP_INSTALL = YES;

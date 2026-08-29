@@ -166,7 +166,14 @@ export class Player {
     // 換了別的歌（使用者手動點選、或換子源重試），預載的那份就作廢了
     this.preloaded = null
 
-    this.audio.src = this.resolveSrc(url)
+    const source = this.resolveSrc(url)
+    // Some iOS WebViews retain the previous element time when a failed source
+    // is replaced. Reset explicitly before asking AVPlayer/HTMLMediaElement to
+    // start; otherwise a retry may appear to play while remaining at EOF.
+    this.audio.pause()
+    this.audio.currentTime = 0
+    this.audio.src = source
+    this.audio.load()
     return this.audio.play()
   }
 

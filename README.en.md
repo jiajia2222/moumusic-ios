@@ -6,11 +6,11 @@ Moumusic is a lightweight music player built by moumou for the browser and iOS. 
 
 ## Features
 
-- Switch between installed sources such as NetEase Cloud Music, QQ Music, Kuwo and Luoxue from the home screen.
-- Import LX Music / MusicFree-compatible sources from Settings. Third-party sources are not bundled with the app.
+- Switch between installed sources such as Kumone / NetEase, QQ Music, Kuwo and Luoxue from the home screen. Kumone / NetEase is bundled on a clean install.
+- Import LX Music User API and MusicFree-compatible sources from Settings, either by URL or local `.js` file. The bundled Kumone / NetEase adapter uses the web backend or the native iOS bridge, while the LX/Kuwo adapter preserves the source workflow.
 - Choose quality levels including 128, 192, 320, 740 and 999 kbps, depending on what the selected source provides.
-- Parse lyrics, open full-screen lyrics, manage favourites, import and export playlists, download tracks and sync sources between devices.
-- Show official charts such as NetEase Cloud Music hot songs when the installed source provides them.
+- Parse LRC, translated lyrics and LX/Kumone-style YRC word timings; full-screen lyrics show translations and iOS Live Activity / Dynamic Island follows the active line.
+- Use Kumone-style NetEase/GD multi-source fallback and show official charts such as NetEase Cloud Music hot songs when available.
 
 ## iOS playback
 
@@ -18,7 +18,7 @@ The native iOS app supports background playback and sends artwork, title, artist
 
 ## Source model
 
-The project is separate from its music sources and does not ship source files in the repository or IPA. Open Settings and paste a source URL to install one. Common LX Music / MusicFree methods and fields are supported, including `search`, `getMediaSource`, `getLyric`, `name`, `singer`, `pic` and `interval`.
+The project is separate from third-party source scripts. The bundled Kumone / NetEase adapter uses the existing web backend routes for search, lyrics, artwork and multi-source fallback; standalone iOS calls the same resolver through native URLSession. An LX User API can still be installed from a URL or local `.js` file for `musicUrl`, `lyric` and `pic` resolution. Common LX Music / MusicFree methods and fields are supported, including `search`, `getMediaSource`, `getLyric`, `name`, `singer`, `pic` and `interval`.
 
 ## Local development
 
@@ -43,4 +43,4 @@ An unsigned IPA cannot be installed directly on an iPhone. Sign it with an Apple
 
 ## Release
 
-Current stable release: [Moumusic v1.10.16](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.16).
+Current stable release: [Moumusic v1.10.17](https://github.com/jiajia2222/moumusic-ios/releases/tag/v1.10.17).

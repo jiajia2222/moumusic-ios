@@ -84,7 +84,12 @@ export class PluginManager {
    */
   loadPlugin(code: string, name?: string): string {
     const plugin = PluginRunner.load(code)
-    const resolvedName = plugin.name || plugin.platform || name || 'Unknown'
+    return this.registerPlugin(plugin, true, name)
+  }
+
+  /** Register a trusted, bundled adapter without evaluating it as user code. */
+  registerPlugin(plugin: Plugin, enabled = true, fallbackName?: string): string {
+    const resolvedName = plugin.name || plugin.platform || fallbackName || 'Unknown'
     const enhancedPlugin: Plugin = {
       ...plugin,
       name: resolvedName,
@@ -101,19 +106,13 @@ export class PluginManager {
     } else {
       this.plugins.push(enhancedPlugin)
     }
-    this.enabled.add(enhancedPlugin.name)
+    if (enabled) this.enabled.add(enhancedPlugin.name)
     return resolvedName
   }
 
   async loadFromURL(url: string, name?: string): Promise<void> {
     const plugin = await PluginRunner.loadFromURL(url)
-    const enhancedPlugin: Plugin = {
-      ...plugin,
-      name: plugin.name || name || 'Unknown',
-      platform: plugin.platform || name || 'unknown',
-    }
-    this.plugins.push(enhancedPlugin)
-    this.enabled.add(enhancedPlugin.name)
+    this.registerPlugin(plugin, true, name)
   }
 
   getPlugins(): Plugin[] {
@@ -295,37 +294,62 @@ export class PluginManager {
   ): Promise<{
     url: string; headers?: Record<string, string>; source?: string; bitrate?: number
   } | null> {
-    if (!plugin.getMediaSource) {
-      return item.url ? { url: item.url } : null
+    const requestedSource = String((item as any).source || (item as any).sourceId || item.subSource || '')
+    const candidates = [plugin, ...this.plugins.filter(p => {
+      if (p === plugin || !this.enabled.has(p.name) || p.instance?.lxUserApi !== true || !p.getMediaSource) return false
+      const info = p.instance?.sourceInfo?.[requestedSource]
+      return !requestedSource || !p.instance?.sourceInfo || !!info?.actions?.includes('musicUrl')
+    })]
+    let lastError: unknown
+    for (const candidate of candidates) {
+      if (!candidate.getMediaSource) {
+        if (candidate === plugin && item.url) return { url: item.url }
+        continue
+      }
+      try {
+        // quality 原樣交給插件詮釋（WhyMusic 對應 128/320/999 kbps）。
+        const result: any = await candidate.getMediaSource(item, quality) ?? { url: item.url }
+        if (!result.url) continue
+        return {
+          url: result.url,
+          headers: result.headers,
+          source: result.source,
+          bitrate: typeof result.bitrate === 'number' ? result.bitrate : undefined,
+        }
+      } catch (error) {
+        lastError = error
+      }
     }
-    // quality 原樣交給插件詮釋（WhyMusic 對應 128/320/999 kbps）。
-    // 不在這裡翻譯成位元率 —— 那是音源的事，播放器不該假設任何音源的音質階梯。
-    const result: any = await plugin.getMediaSource(item, quality) ?? { url: item.url }
-    if (!result.url) return null
-    return {
-      url: result.url,
-      headers: result.headers,
-      // 音源可回報它實際用了哪個子源。播不出來時呼叫端要靠這個決定排除誰 ——
-      // 不能用 item.subSource，因為後端可能已經跨源救援換過來源了。
-      source: result.source,
-      // 實際的位元率。音源可能因為這首歌沒有高音質而降級，所以不等於要求的那檔 ——
-      // 下載清單顯示的必須是真的存下來的音質。
-      bitrate: typeof result.bitrate === 'number' ? result.bitrate : undefined,
-    }
+    if (lastError) throw lastError
+    return item.url ? { url: item.url } : null
   }
 
   /**
-   * 取歌詞原文（LRC）。音源沒有這個能力、或這首沒詞就回空字串。
-   *
-   * 只回 rawLrc，刻意不碰音源同時給的 translation：歌詞顯示原文就好 ——
-   * 中文歌顯示中文、英文歌顯示英文，不做翻譯也不轉繁簡。多一種語言疊在
-   * 畫面上，行高變兩倍、還要處理兩份時間軸對不齊。
+   * 取歌詞。除了傳統 LRC，也保留 LX Music 常見的翻譯、羅馬音與 YRC 欄位，
+   * 交給前端的分層歌詞解析器按時間軸合併。
    */
-  async getLyric(plugin: Plugin, item: MusicItem): Promise<string> {
-    if (!plugin.getLyric) return ''
-    const result: any = await plugin.getLyric(item)
-    // 音源可能回字串、也可能回 { rawLrc }（本專案的音源是後者）
-    if (typeof result === 'string') return result
-    return String(result?.rawLrc || result?.lyric || '')
+  async getLyric(plugin: Plugin, item: MusicItem): Promise<any> {
+    const requestedSource = String((item as any).source || (item as any).sourceId || item.subSource || '')
+    const candidates = [plugin, ...this.plugins.filter(p => {
+      if (p === plugin || !this.enabled.has(p.name) || p.instance?.lxUserApi !== true || !p.getLyric) return false
+      const info = p.instance?.sourceInfo?.[requestedSource]
+      return !requestedSource || !p.instance?.sourceInfo || !!info?.actions?.includes('lyric')
+    })]
+    let lastError: unknown
+    for (const candidate of candidates) {
+      if (!candidate.getLyric) continue
+      try {
+        const result: any = await candidate.getLyric(item)
+        if (!result) continue
+        // 保留 LX Music 的 lyric/tlyric/rlyric/lxlyric，供 YRC/翻譯歌詞解析器使用。
+        if (typeof result === 'string') return result
+        if (result.rawLrc && !result.lyric) return { ...result, lyric: result.rawLrc }
+        return result
+      } catch (error) {
+        lastError = error
+      }
+    }
+    if (lastError) throw lastError
+    return ''
   }
 }

@@ -23,6 +23,6 @@ test('each supported language has a standalone README', () => {
     const readme = fs.readFileSync(filePath, 'utf8')
     assert.match(readme, /^# Moumusic\s/)
     assert.match(readme, /README\.zh-CN\.md/)
-    assert.match(readme, /Moumusic v1\.10\.16/)
+    assert.match(readme, /Moumusic v1\.10\.17/)
   }
 })

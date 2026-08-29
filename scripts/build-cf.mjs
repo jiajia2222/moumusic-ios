@@ -22,12 +22,17 @@ const DIST = path.join(ROOT, 'packages/web/dist')
 const stamp = buildStamp()
 const env = { ...process.env, BUILD_STAMP: stamp }
 const run = (cmd, args, cwd) =>
-  execFileSync(cmd, args, { cwd: cwd || ROOT, env, stdio: 'inherit' })
+  execFileSync(cmd, args, {
+    cwd: cwd || ROOT,
+    env,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  })
 
 console.log(`▸ 建置戳記：${stamp}`)
 
 // 1) 前端（vite 會讀 BUILD_STAMP）
-run('pnpm', ['--filter', '@whymusic/web', 'build'])
+run(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['--filter', '@whymusic/web', 'build'])
 
 // 2) worker → dist/_worker.js（同樣讀 BUILD_STAMP）
 run('node', [path.join(ROOT, 'scripts/build-worker.mjs')])

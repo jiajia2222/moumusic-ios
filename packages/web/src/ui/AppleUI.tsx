@@ -111,7 +111,7 @@ function LyricsSheet({
   open: boolean
   onClose: () => void
   item: MusicItem | null
-  lines: { time: number; text: string }[]
+  lines: { time: number; text: string; translation?: string; romaji?: string }[]
   loading: boolean
   index: number
   onSeek: (s: number) => void
@@ -220,7 +220,17 @@ function LyricsSheet({
                   : 'text-[18px] text-white/30 active:text-white/60'
               }`}
             >
-              {l.text}
+              <span className="block">{l.text}</span>
+              {l.translation && (
+                <span className={`block mt-1 text-[13px] font-normal ${i === index ? 'text-white/60' : 'text-white/20'}`}>
+                  {l.translation}
+                </span>
+              )}
+              {!l.translation && l.romaji && (
+                <span className={`block mt-1 text-[13px] font-normal ${i === index ? 'text-white/50' : 'text-white/20'}`}>
+                  {l.romaji}
+                </span>
+              )}
             </p>
           ))}
         </div>
@@ -465,7 +475,7 @@ export default function AppleUI({ app }: { app: MusicApp }) {
     currentTime, currentView, cyclePlayMode, downloads, downloadingKey, duration,
     exportDownload, exportFavorites, favorites,
     formatTime, goBackToSearch, handleDownload, handleItemClick, handleSearchSubmit,
-    hasMore, importBusy, importFavorites, importProgress, importText, installPluginFromURL,
+    hasMore, importBusy, importFavorites, importProgress, importText, installPluginFromURL, installPluginFromFile,
     isFavorite, isPlaying, keyword, loadMore, loading,
     loadingMore, lockedItem, notification, play, playMode, playNext, playPrev, playingItem,
     pluginError, pluginKey, pluginName, pluginToggles, pluginUrl, recommendCategory,
@@ -1117,18 +1127,23 @@ export default function AppleUI({ app }: { app: MusicApp }) {
                                disabled:opacity-40 active:opacity-70 transition">
                     {loading ? t('安裝中…') : t('安裝')}
                   </button>
+                  <label className="block w-full py-2.5 rounded-[10px] bg-white/15 text-[15px] font-medium
+                                    text-center cursor-pointer active:opacity-70 transition">
+                    {t('從本地 JS 檔案安裝')}
+                    <input type="file" accept=".js,text/javascript" className="hidden"
+                      onChange={async e => {
+                        const file = e.target.files?.[0]
+                        if (file) await installPluginFromFile(file)
+                        e.target.value = ''
+                      }} />
+                  </label>
                   <div className="text-[12px] text-white/35 leading-relaxed">
-                    {t('兼容落雪/LX Music 与 MusicFree 音源格式；请仅导入你有权使用的音源。')}
+                    {t('兼容落雪/LX Music User API 與 MusicFree 音源格式；請僅匯入你有權使用的音源。')}
                   </div>
-                  {/*
-                    這裡刻意**不**提供任何音源網址。這個 app 不隨附音源、產物裡
-                    沒有任何音源檔，也不預設任何來源 —— 音源要用哪一個由使用者
-                    自己決定並提供。播放器只認插件介面，不認任何特定音源。
-                  */}
                   <div className="text-[12px] text-white/30 leading-relaxed">
                     {pluginUrl.trim()
                       ? t('安裝後即可搜尋與播放。')
-                      : t('本 App 不附帶音源。請貼上你自己的音源網址。')}
+                      : t('已內置 Kumone / Kuwo 搜尋；LX 與舊格式音源均可匯入。')}
                   </div>
                 </div>
               </div>

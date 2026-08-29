@@ -10,7 +10,7 @@ test('iOS build entry is available and uses the Capacitor iOS platform', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 
   assert.equal(pkg.dependencies['@capacitor/ios'], '^8.5.0')
-  assert.equal(pkg.version, '1.10.16')
+  assert.equal(pkg.version, '1.10.17')
   assert.equal(pkg.scripts['build:ipa'], 'node scripts/build-ipa.mjs')
   assert.ok(fs.existsSync(path.join(ROOT, 'scripts', 'build-ipa.mjs')))
 })

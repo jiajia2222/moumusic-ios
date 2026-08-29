@@ -28,10 +28,22 @@ test('the home recommendation model exposes a selectable source', () => {
 
 test('source import accepts common LX Music and MusicFree method names', () => {
   const runner = read('packages/web/src/core/plugin/runner.ts')
+  const native = read('packages/web/src/core/native.ts')
   assert.match(runner, /musicSearch/)
   assert.match(runner, /musicUrl/)
   assert.match(runner, /getMusicUrl/)
   assert.match(runner, /musicLyric/)
+  assert.match(runner, /isLXUserApiCode/)
+  assert.match(read('packages/web/src/core/plugin/lxUserApi.ts'), /EVENT_NAMES/)
+  assert.match(native, /viaProxy\(url: string, method = 'GET'\)/)
+  assert.match(read('packages/web/src/core/plugin/lxUserApi.ts'), /viaProxy\(url, method\)/)
+})
+
+test('lyrics keep LX/Kumone translation and word-timing layers', () => {
+  const lyrics = read('packages/web/src/core/lyrics.ts')
+  assert.match(lyrics, /parseYrc/)
+  assert.match(lyrics, /parseLyricResponse/)
+  assert.match(lyrics, /translation\?: string/)
 })
 
 test('source results normalize common LX Music metadata fields', () => {
@@ -47,4 +59,15 @@ test('the selected home source also limits search dispatch', () => {
   const app = read('packages/web/src/musicApp.ts')
   assert.match(app, /const searchSource = recommendSourceRef\.current/)
   assert.match(app, /filter\(plugin\s*=>\s*searchSource === 'all' \|\| plugin\.name === searchSource,?\s*\)/)
+})
+
+test('the bundled Kumone source spans web backend and standalone iOS paths', () => {
+  const app = read('packages/web/src/musicApp.ts')
+  const source = read('packages/web/src/core/plugin/kumone.ts')
+  assert.match(app, /createKumonePlugin/)
+  assert.match(source, /Kumone \/ NetEase/)
+  assert.match(source, /\/api\/why-search/)
+  assert.match(source, /\/api\/why-url/)
+  assert.match(source, /music-api\.gdstudio\.xyz\/api\.php/)
+  assert.match(source, /SOURCE_ORDER = \['netease', 'kuwo', 'kugou'\]/)
 })

@@ -18,7 +18,26 @@
 
 declare global {
   interface Window {
-    Capacitor?: { isNativePlatform?: () => boolean; platform?: string }
+    Capacitor?: {
+      isNativePlatform?: () => boolean
+      getPlatform?: () => string
+      platform?: string
+      Plugins?: Record<string, { request?: (options: any) => Promise<any> }>
+    }
+    MoumusicHttp?: {
+      request(options: {
+        url: string
+        method?: string
+        headers?: Record<string, string>
+        data?: unknown
+        responseType?: 'text' | 'base64'
+      }): Promise<{ status: number; data?: unknown; headers?: Record<string, string> }>
+    }
+    KumoneSource?: {
+      search(options: { query: string; page?: number; limit?: number }): Promise<{ data?: unknown[]; isEnd?: boolean }>
+      media(options: { id: string; quality?: string }): Promise<{ url?: string; source?: string; quality?: string; bitrate?: number }>
+      lyric(options: { id: string }): Promise<Record<string, unknown>>
+    }
     __WHYMUSIC_NATIVE__?: boolean
   }
 }
@@ -33,13 +52,36 @@ export function isNative(): boolean {
   return typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : !!cap.platform
 }
 
+/** The native URLSession bridge is registered only by the iOS shell. */
+export function isIOSNative(): boolean {
+  if (!isNative() || typeof window === 'undefined') return false
+  const cap = window.Capacitor
+  const platform = typeof cap?.getPlatform === 'function' ? cap.getPlatform() : cap?.platform
+  return platform === 'ios'
+}
+
 /**
  * 把跨域資源包成經由本站後端代抓的 URL。原生模式下不包 —— 沒有後端，
  * 而且 WebView 允許直連。同源路徑也不包（代理只吃絕對 URL）。
  */
-export function viaProxy(url: string): string {
+export function viaProxy(url: string, method = 'GET'): string {
   if (isNative()) return url
   const sameOrigin = url.startsWith('/')
     || (typeof window !== 'undefined' && url.startsWith(window.location.origin))
-  return sameOrigin ? url : `/api/proxy?url=${encodeURIComponent(url)}&method=GET`
+  return sameOrigin
+    ? url
+    : `/api/proxy?url=${encodeURIComponent(url)}&method=${encodeURIComponent(method.toUpperCase())}`
+}
+
+import { registerPlugin } from '@capacitor/core'
+
+/**
+ * Native-only HTTP escape hatch for LX User APIs.  A Capacitor WebView still
+ * obeys CORS, while the app itself can safely make the same request through
+ * URLSession.  The Swift side registers this bridge without adding a third-party
+ * Capacitor dependency.
+ */
+if (isIOSNative() && typeof window !== 'undefined') {
+  window.MoumusicHttp = registerPlugin('MoumusicHttp') as Window['MoumusicHttp']
+  window.KumoneSource = registerPlugin('KumoneSource') as Window['KumoneSource']
 }
